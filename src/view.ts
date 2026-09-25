@@ -11,6 +11,7 @@
 import type { NearbyEntry, NearbyFailure } from './api'
 import type { LadderOutcome } from './ladder'
 import { formatDistance, formatEventDate } from './format'
+import { domIdForResult } from './result-markers'
 
 export function escapeHtml(value: string): string {
   return value
@@ -26,7 +27,12 @@ export function hasUsableSource(entry: NearbyEntry): boolean {
   return typeof entry.sourceUrl === 'string' && /^https?:\/\//i.test(entry.sourceUrl)
 }
 
-export function renderEntry(entry: NearbyEntry): string {
+/**
+ * @param number Position in the list, 1-based. When given, the card carries the
+ * number shown on its map marker and an id the marker can scroll to. Omitted
+ * when a card is rendered outside a numbered list.
+ */
+export function renderEntry(entry: NearbyEntry, number?: number): string {
   const title = escapeHtml(entry.displayTitle ?? entry.title)
   const date = escapeHtml(formatEventDate(entry.dateStart, entry.datePrecision))
   const distance = escapeHtml(formatDistance(entry.distanceKm))
@@ -36,8 +42,17 @@ export function renderEntry(entry: NearbyEntry): string {
     ? `<a class="source" href="${escapeHtml(entry.sourceUrl as string)}" target="_blank" rel="noopener noreferrer">Source</a>`
     : '<span class="source source--missing">No source link</span>'
 
+  // aria-hidden because the number is a visual key to the map, not information
+  // about the event. A screen reader already announces list position.
+  const marker =
+    number === undefined
+      ? ''
+      : `<span class="entry-number" aria-hidden="true">${number}</span>`
+  const id = number === undefined ? '' : ` id="${domIdForResult(number)}"`
+
   return [
-    '<li class="entry">',
+    `<li class="entry"${id}>`,
+    marker,
     `<p class="entry-meta"><time>${date}</time> &middot; <span class="distance">${distance}</span> ${scope}</p>`,
     `<h3 class="entry-title">${title}</h3>`,
     blurb,
@@ -69,7 +84,9 @@ export function renderStatus(outcome: LadderOutcome, finalRungKm: number): strin
 }
 
 export function renderResults(outcome: LadderOutcome, finalRungKm: number): string {
-  const entries = outcome.response.entries.map(renderEntry).join('')
+  const entries = outcome.response.entries
+    .map((entry, index) => renderEntry(entry, index + 1))
+    .join('')
   const list = entries === '' ? '' : `<ol class="entries">${entries}</ol>`
   const counted =
     outcome.response.totalWithinRadius > outcome.response.returned

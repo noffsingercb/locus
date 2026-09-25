@@ -1,9 +1,11 @@
 import './style.css'
 import { fetchNearby, NearbyError } from './api'
 import type { NearbyFailure, Point } from './api'
-import { LADDER_KM } from './config'
+import { DEBOUNCE_MS, LADDER_KM } from './config'
 import { walkLadder } from './ladder'
 import { createMapPinInput } from './map-input'
+import { numberResults } from './result-markers'
+import type { NumberedResult } from './result-markers'
 import { renderFailure, renderIdle, renderResults, renderSearching } from './view'
 
 const app = document.querySelector<HTMLElement>('#app')
@@ -47,6 +49,8 @@ async function search(point: Point): Promise<void> {
   inFlight = controller
 
   results.innerHTML = renderSearching(LADDER_KM[0])
+  // Markers from the previous pin are wrong the moment a new search starts.
+  mapInput.clearResults()
 
   try {
     const outcome = await walkLadder(async (radiusKm) => {
@@ -55,15 +59,31 @@ async function search(point: Point): Promise<void> {
     })
     if (mine !== generation) return
     results.innerHTML = renderResults(outcome, finalRungKm)
+    mapInput.showResults(numberResults(outcome.response.entries))
   } catch (error) {
     if (mine !== generation) return
     if (error instanceof Error && error.name === 'AbortError') return
     const failure: NearbyFailure =
       error instanceof NearbyError ? error.failure : { kind: 'malformed' }
     results.innerHTML = renderFailure(failure)
+    mapInput.clearResults()
   }
 }
 
-createMapPinInput(mapElement, (point) => {
-  void search(point)
-})
+/** Brings the card for a clicked marker into view and flags it briefly. */
+function revealCard(result: NumberedResult): void {
+  const card = document.getElementById(result.domId)
+  if (card === null) return
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  card.classList.add('entry--active')
+  window.setTimeout(() => card.classList.remove('entry--active'), 1600)
+}
+
+const mapInput = createMapPinInput(
+  mapElement,
+  (point) => {
+    void search(point)
+  },
+  DEBOUNCE_MS,
+  revealCard,
+)
