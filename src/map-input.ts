@@ -18,7 +18,8 @@ export interface PinInput {
   destroy(): void
 }
 
-const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+const TILE_HOST = 'https://tile.openstreetmap.org'
+const TILE_URL = `${TILE_HOST}/{z}/{x}/{y}.png`
 
 /** Keeps a dragged pin inside a single world copy after worldCopyJump wrapping. */
 function normalize(latlng: L.LatLng): Point {
