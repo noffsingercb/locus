@@ -18,6 +18,8 @@ export interface PinInput {
   destroy(): void
 }
 
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+
 /** Keeps a dragged pin inside a single world copy after worldCopyJump wrapping. */
 function normalize(latlng: L.LatLng): Point {
   return { lat: latlng.lat, lng: ((((latlng.lng + 180) % 360) + 360) % 360) - 180 }
@@ -34,7 +36,7 @@ export function createMapPinInput(
     worldCopyJump: true,
   })
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer(TILE_URL, {
     maxZoom: 18,
     attribution: '&copy; OpenStreetMap contributors',
   }).addTo(map)
