@@ -71,17 +71,27 @@ body {
 }
 
 /* Result markers: hollow and numbered, so they read as answers rather than as
-   more pins the user placed. */
+   more pins the user placed.
+
+   Centring is done with a fixed box and line-height rather than flex or grid.
+   Leaflet sizes and positions this element with its own inline styles and
+   transforms, and a layout mode declared here loses that argument -- which is
+   how the digits ended up outside their circles. Width and height must match
+   iconSize in map-input.ts, and line-height must equal the content box
+   (26px less the 2px border on each side). */
 .locus-result-pin {
-  display: grid;
-  place-items: center;
+  width: 26px;
+  height: 26px;
   background: #fff;
   color: var(--ink);
   border: 2px solid var(--accent);
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 22px;
+  text-align: center;
+  /* Equal-width digits, so 11 sits as evenly as 1. */
+  font-variant-numeric: tabular-nums;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
 }
@@ -120,28 +130,28 @@ body {
 
 .entry {
   position: relative;
-  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  padding: 0.85rem 1rem 0.85rem 2.9rem;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 0.6rem;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-/* Same shape and weight as the map marker, so the pairing is obvious without
-   a legend explaining it. */
+/* Same shape, size and weight as the map marker, so the pairing is obvious
+   without a legend explaining it. */
 .entry-number {
   position: absolute;
   left: 0.75rem;
   top: 0.8rem;
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 26px;
+  height: 26px;
   border: 2px solid var(--accent);
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .entry--active {

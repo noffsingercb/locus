@@ -30,6 +30,13 @@ export interface PinInput {
 const TILE_HOST = 'https://tile.openstreetmap.org'
 const TILE_URL = `${TILE_HOST}/{z}/{x}/{y}.png`
 
+/**
+ * Marker diameter in px. The .locus-result-pin rule in style.css hard-codes a
+ * matching width, height and line-height, because centring the digits depends
+ * on the box being exactly this size. Change both together.
+ */
+const RESULT_MARKER_PX = 26
+
 /** Keeps a dragged pin inside a single world copy after worldCopyJump wrapping. */
 function normalize(latlng: L.LatLng): Point {
   return { lat: latlng.lat, lng: ((((latlng.lng + 180) % 360) + 360) % 360) - 180 }
@@ -89,13 +96,14 @@ export function createMapPinInput(
       if (results.length === 0) return
 
       const points: L.LatLngTuple[] = []
+      const half = RESULT_MARKER_PX / 2
 
       for (const result of results) {
         const numberIcon = L.divIcon({
           className: 'locus-result-pin',
-          html: `<span>${result.number}</span>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          html: String(result.number),
+          iconSize: [RESULT_MARKER_PX, RESULT_MARKER_PX],
+          iconAnchor: [half, half],
         })
         const resultMarker = L.marker([result.lat, result.lng], {
           icon: numberIcon,
@@ -132,8 +140,10 @@ export function createMapPinInput(
     },
 
     destroy(): void {
+      resultLayer.clearLayers()
       if (timer !== undefined) window.clearTimeout(timer)
       map.remove()
     },
   }
+}
 }
