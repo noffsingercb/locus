@@ -1,10 +1,14 @@
 import type { NearbyEntry, NearbyResponse } from '../src/api'
 
+/**
+ * displayTitle defaults to null because most real rows have none, and because a
+ * default that duplicated title silently swallowed overrides of title alone.
+ */
 export function makeEntry(overrides: Partial<NearbyEntry> = {}): NearbyEntry {
   return {
     id: 'Q1',
     title: 'An event',
-    displayTitle: 'An event',
+    displayTitle: null,
     blurb: null,
     dateStart: '1900-01-01',
     dateEnd: null,

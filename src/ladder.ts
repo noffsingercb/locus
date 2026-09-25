@@ -49,7 +49,7 @@ export async function walkLadder(
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let previousRungKm: number | null = null
     let last: Omit<LadderOutcome, 'satisfied' | 'requestCount'> | null = null
-    let mismatch = false
+    let restartNeeded = false
 
     for (const rungKm of rungs) {
       const response = await query(rungKm)
@@ -58,8 +58,21 @@ export async function walkLadder(
       if (datasetVersion === undefined) {
         datasetVersion = response.datasetVersion
       } else if (response.datasetVersion !== datasetVersion) {
+        if (!restarted) {
+          // The rungs walked so far describe a dataset that no longer exists.
+          // Discard them and walk again, letting the restart's own first
+          // response set the baseline -- keeping the new version here would
+          // make that first response look like a second swap.
+          restarted = true
+          datasetVersion = undefined
+          restartNeeded = true
+          break
+        }
+        // A second swap during the restart. Walking a third time cannot
+        // converge, so the freshest answer is shown rather than looping or
+        // failing a request the service answered correctly.
         datasetVersion = response.datasetVersion
-        mismatch = true
+        last = { response, rungKm, previousRungKm }
         break
       }
 
@@ -73,15 +86,16 @@ export async function walkLadder(
       previousRungKm = rungKm
     }
 
-    if (mismatch && !restarted) {
-      restarted = true
-      continue
-    }
+    if (restartNeeded) continue
     if (last === null) throw new Error('The ladder produced no usable response.')
 
     // Final rung, short of the target -- including zero, which is a valid
     // answer about the corpus rather than an error.
-    return { ...last, satisfied: false, requestCount }
+    return {
+      ...last,
+      satisfied: last.response.returned >= target,
+      requestCount,
+    }
   }
 
   throw new Error('The ladder restarted without settling.')

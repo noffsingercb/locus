@@ -2,8 +2,9 @@
  * The input layer: a map with one pin.
  *
  * Structured as a swappable source so the v0.2 "use my location" affordance can
- * be added beside it without restructuring the app. The browser geolocation API
- * is deliberately absent from this release.
+ * be added beside it without restructuring the app. The browser location API is
+ * deliberately absent from this release, and privacy.test.ts asserts that the
+ * shipped source does not so much as name it.
  *
  * Tiles are requested by z/x/y viewport coordinates only. The pin coordinate is
  * never appended to a tile URL or any other third-party request.
