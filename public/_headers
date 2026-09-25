@@ -1,11 +1,16 @@
 # Cloudflare Pages response headers.
 #
-# Referrer-Policy is load-bearing here rather than decorative: Locus must not
-# hand its own URL to a tile host or to a source link the user opens.
+# Referrer-Policy sends the origin and never the path. A blanket no-referrer
+# was tried first and OpenStreetMap refused every tile with 403, because its
+# usage policy requires an identifiable client. The origin is safe to send:
+# Locus never puts a coordinate in a URL, so there is no path to leak, and the
+# one request that carries a coordinate sets referrerPolicy: 'no-referrer'
+# itself in src/api.ts.
+#
 # Permissions-Policy proves the v0.1 claim that geolocation is not used -- the
 # browser refuses the API even if some future dependency asks for it.
 /*
-  Referrer-Policy: no-referrer
+  Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), camera=(), microphone=(), interest-cohort=()
