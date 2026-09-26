@@ -1,12 +1,4 @@
-/**
- * Every user-facing string in Locus.
- *
- * These are pure string functions so the states that carry the experience --
- * escalated, short, empty, rate-limited, unreachable -- can be asserted in
- * tests without a browser. Rendering never re-orders entries: selection was by
- * distance upstream and presentation is by date, and re-sorting here would
- * quietly break that contract.
- */
+/** Pure rendering functions for every Locus state. */
 
 import type { NearbyEntry, NearbyFailure } from './api'
 import type { LadderOutcome } from './ladder'
@@ -22,32 +14,16 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;')
 }
 
-/** Attribution requires a real link; Locus never invents or substitutes one. */
-export function hasUsableSource(entry: NearbyEntry): boolean {
-  return typeof entry.sourceUrl === 'string' && /^https?:\/\//i.test(entry.sourceUrl)
-}
-
-/**
- * @param number Position in the list, 1-based. When given, the card carries the
- * number shown on its map marker and an id the marker can scroll to. Omitted
- * when a card is rendered outside a numbered list.
- */
 export function renderEntry(entry: NearbyEntry, number?: number): string {
   const title = escapeHtml(entry.displayTitle ?? entry.title)
   const date = escapeHtml(formatEventDate(entry.dateStart, entry.datePrecision))
   const distance = escapeHtml(formatDistance(entry.distanceKm))
   const scope = entry.scope ? `<span class="badge">${escapeHtml(entry.scope)}</span>` : ''
   const blurb = entry.blurb ? `<p class="blurb">${escapeHtml(entry.blurb)}</p>` : ''
-  const source = hasUsableSource(entry)
-    ? `<a class="source" href="${escapeHtml(entry.sourceUrl as string)}" target="_blank" rel="noopener noreferrer">Source</a>`
-    : '<span class="source source--missing">No source link</span>'
-
-  // aria-hidden because the number is a visual key to the map, not information
-  // about the event. A screen reader already announces list position.
-  const marker =
-    number === undefined
-      ? ''
-      : `<span class="entry-number" aria-hidden="true">${number}</span>`
+  const source = `<a class="source" href="${escapeHtml(entry.sourceUrl)}" target="_blank" rel="noopener noreferrer">Source</a>`
+  const marker = number === undefined
+    ? ''
+    : `<span class="entry-number" aria-hidden="true">${number}</span>`
   const id = number === undefined ? '' : ` id="${domIdForResult(number)}"`
 
   return [
@@ -62,7 +38,7 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
 }
 
 export function renderStatus(outcome: LadderOutcome, finalRungKm: number): string {
-  const { response, rungKm, previousRungKm, satisfied } = outcome
+  const { response, rungKm, previousRungKm, previousReturned, satisfied } = outcome
 
   if (response.returned === 0) {
     return [
@@ -76,8 +52,11 @@ export function renderStatus(outcome: LadderOutcome, finalRungKm: number): strin
     return `<p class="status status--short">Only ${response.returned} ${plural} within ${finalRungKm} km. That is everything GeoHistory holds near this pin.</p>`
   }
 
-  if (previousRungKm !== null) {
-    return `<p class="status status--escalated">Nothing within ${previousRungKm} km. Showing the closest records within ${rungKm} km.</p>`
+  if (previousRungKm !== null && previousReturned !== null) {
+    const prior = previousReturned === 0
+      ? `Nothing within ${previousRungKm} km.`
+      : `Only ${previousReturned} ${previousReturned === 1 ? 'record' : 'records'} within ${previousRungKm} km.`
+    return `<p class="status status--escalated">${prior} Showing the closest records within ${rungKm} km.</p>`
   }
 
   return `<p class="status">Closest records within ${rungKm} km.</p>`
@@ -88,10 +67,9 @@ export function renderResults(outcome: LadderOutcome, finalRungKm: number): stri
     .map((entry, index) => renderEntry(entry, index + 1))
     .join('')
   const list = entries === '' ? '' : `<ol class="entries">${entries}</ol>`
-  const counted =
-    outcome.response.totalWithinRadius > outcome.response.returned
-      ? `<p class="status-detail">Showing the ${outcome.response.returned} closest of ${outcome.response.totalWithinRadius} within ${outcome.rungKm} km, in date order.</p>`
-      : ''
+  const counted = outcome.response.totalWithinRadius > outcome.response.returned
+    ? `<p class="status-detail">Showing the ${outcome.response.returned} closest of ${outcome.response.totalWithinRadius} within ${outcome.rungKm} km, in date order.</p>`
+    : ''
   return `${renderStatus(outcome, finalRungKm)}${counted}${list}`
 }
 
@@ -109,12 +87,15 @@ export function renderIdle(): string {
 export function renderFailure(failure: NearbyFailure): string {
   switch (failure.kind) {
     case 'rate-limited':
-      return `<p class="status status--error">Too many requests. The service allows a burst and then asks for a pause \u2014 try again in ${failure.retryAfterSeconds} seconds.</p>`
+      return [
+        `<p class="status status--error">Too many requests. Try again in ${failure.retryAfterSeconds} seconds.</p>`,
+        `<button type="button" class="retry" data-retry disabled>Retry in ${failure.retryAfterSeconds} seconds</button>`,
+      ].join('')
     case 'unreachable':
-      return '<p class="status status--error">Could not reach the GeoHistory service. Your pin is still here; try again in a moment.</p>'
+      return '<p class="status status--error">Could not reach the GeoHistory service. Your pin is still here.</p><button type="button" class="retry" data-retry>Try again</button>'
     case 'malformed':
-      return '<p class="status status--error">The service sent a response Locus could not read, so nothing is shown rather than a partial list.</p>'
+      return '<p class="status status--error">The service sent a response Locus could not safely render, so nothing is shown.</p><button type="button" class="retry" data-retry>Try again</button>'
     case 'rejected':
-      return `<p class="status status--error">${escapeHtml(failure.message)}</p>`
+      return `<p class="status status--error">${escapeHtml(failure.message)}</p><button type="button" class="retry" data-retry>Try again</button>`
   }
 }

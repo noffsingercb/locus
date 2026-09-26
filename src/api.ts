@@ -1,11 +1,4 @@
-/**
- * The only place in Locus that touches the network.
- *
- * The caller's coordinate travels in a POST body and nowhere else. It is never
- * concatenated into a URL, a query string, a log line, or a cache key. Keeping
- * every request construction in one small module is what makes that claim
- * reviewable in a diff rather than a promise in a README.
- */
+/** The only module allowed to send a network request containing a coordinate. */
 
 import {
   API_BASE_URL,
@@ -19,7 +12,7 @@ export interface Point {
   lng: number
 }
 
-/** Mirrors NearbyEntry in GeoHistory's nearby.ts. */
+/** Locus requires a usable per-item source URL before an entry can render. */
 export interface NearbyEntry {
   id: string
   title: string
@@ -36,12 +29,12 @@ export interface NearbyEntry {
   lat: number
   lng: number
   distanceKm: number
-  sourceUrl: string | null
+  sourceUrl: string
 }
 
-/** Mirrors NearbyResult in GeoHistory's nearby.ts. */
 export interface NearbyResponse {
   datasetVersion: string | null
+  datasetBuild: string | null
   engine: string
   radiusKm: number
   coordinateMode: string
@@ -67,28 +60,38 @@ export class NearbyError extends Error {
   }
 }
 
-/**
- * Builds the single request Locus is allowed to make.
- *
- * Returned as data rather than issued directly so a test can assert what is in
- * the URL and what is in the body without a network stub.
- */
 export function buildNearbyRequest(
   point: Point,
   radiusKm: number,
   baseUrl: string = API_BASE_URL,
 ): { url: string; body: string } {
-  const body = JSON.stringify({
-    lat: point.lat,
-    lng: point.lng,
-    radiusKm,
-    limit: TARGET_RESULTS,
-    significanceFloor: SIGNIFICANCE_FLOOR,
-    coordinateMode: 'direct',
-    excludeCategories: [...EXCLUDED_CATEGORIES],
-    includeUniversal: false,
-  })
-  return { url: `${baseUrl}/v1/nearby`, body }
+  return {
+    url: `${baseUrl}/v1/nearby`,
+    body: JSON.stringify({
+      lat: point.lat,
+      lng: point.lng,
+      radiusKm,
+      limit: TARGET_RESULTS,
+      significanceFloor: SIGNIFICANCE_FLOOR,
+      coordinateMode: 'direct',
+      excludeCategories: [...EXCLUDED_CATEGORIES],
+      includeUniversal: false,
+    }),
+  }
+}
+
+function nullableString(value: unknown): boolean {
+  return value === null || typeof value === 'string'
+}
+
+export function isUsableSourceUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
 }
 
 function isEntry(value: unknown): value is NearbyEntry {
@@ -97,19 +100,34 @@ function isEntry(value: unknown): value is NearbyEntry {
   return (
     typeof entry.id === 'string' &&
     typeof entry.title === 'string' &&
+    nullableString(entry.displayTitle) &&
+    nullableString(entry.blurb) &&
     typeof entry.dateStart === 'string' &&
-    typeof entry.distanceKm === 'number'
+    nullableString(entry.dateEnd) &&
+    nullableString(entry.datePrecision) &&
+    nullableString(entry.category) &&
+    nullableString(entry.scope) &&
+    (entry.significance === null || typeof entry.significance === 'number') &&
+    (entry.notability === null || typeof entry.notability === 'number') &&
+    nullableString(entry.coordSource) &&
+    typeof entry.lat === 'number' && Number.isFinite(entry.lat) &&
+    typeof entry.lng === 'number' && Number.isFinite(entry.lng) &&
+    typeof entry.distanceKm === 'number' && Number.isFinite(entry.distanceKm) &&
+    isUsableSourceUrl(entry.sourceUrl)
   )
 }
 
 function isNearbyResponse(value: unknown): value is NearbyResponse {
   if (!value || typeof value !== 'object') return false
   const payload = value as Record<string, unknown>
+  if (!nullableString(payload.datasetVersion)) return false
+  if (!nullableString(payload.datasetBuild)) return false
+  if (typeof payload.engine !== 'string') return false
   if (typeof payload.radiusKm !== 'number') return false
-  if (typeof payload.returned !== 'number') return false
-  if (typeof payload.totalWithinRadius !== 'number') return false
-  if (!Array.isArray(payload.entries)) return false
-  return payload.entries.every(isEntry)
+  if (typeof payload.returned !== 'number' || !Number.isInteger(payload.returned)) return false
+  if (typeof payload.totalWithinRadius !== 'number' || !Number.isInteger(payload.totalWithinRadius)) return false
+  if (!Array.isArray(payload.entries) || !payload.entries.every(isEntry)) return false
+  return payload.returned === payload.entries.length && payload.totalWithinRadius >= payload.returned
 }
 
 function parseRetryAfter(header: string | null): number {
@@ -126,7 +144,7 @@ async function readErrorMessage(response: Response): Promise<string> {
       if (typeof message === 'string') return message
     }
   } catch {
-    // fall through to the generic message
+    // Use the generic message below.
   }
   return `The service rejected the request (${response.status}).`
 }
@@ -137,7 +155,6 @@ export interface FetchNearbyOptions {
   baseUrl?: string
 }
 
-/** One question, at one radius. The ladder lives in ladder.ts. */
 export async function fetchNearby(
   point: Point,
   radiusKm: number,
@@ -158,7 +175,6 @@ export async function fetchNearby(
       signal: options.signal,
     })
   } catch (error) {
-    // An abort is the caller moving the pin, not a service problem.
     if (error instanceof Error && error.name === 'AbortError') throw error
     throw new NearbyError({ kind: 'unreachable' })
   }
@@ -169,7 +185,6 @@ export async function fetchNearby(
       retryAfterSeconds: parseRetryAfter(response.headers.get('retry-after')),
     })
   }
-
   if (!response.ok) {
     throw new NearbyError({
       kind: 'rejected',
@@ -184,9 +199,6 @@ export async function fetchNearby(
   } catch {
     throw new NearbyError({ kind: 'malformed' })
   }
-
-  // Partial rows are never rendered: a list that looks complete and is not is
-  // worse than an honest error.
   if (!isNearbyResponse(payload)) throw new NearbyError({ kind: 'malformed' })
   return payload
 }

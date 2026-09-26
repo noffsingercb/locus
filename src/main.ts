@@ -25,7 +25,7 @@ app.innerHTML = `
     Event data from <a href="https://github.com/noffsingercb/GeoHistory" rel="noopener noreferrer">GeoHistory</a>,
     derived from Wikidata and Wikipedia and reused under
     <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">CC BY-SA</a>.
-    Each result links to its own source. Map tiles &copy; OpenStreetMap contributors.
+    Each displayed result links to its source. Map data &copy; OpenStreetMap contributors; default tiles &copy; CARTO.
   </footer>
 `
 
@@ -35,13 +35,41 @@ if (!mapElement || !resultsElement) throw new Error('Locus layout failed to moun
 
 const results: HTMLElement = resultsElement
 const finalRungKm: number = LADDER_KM[LADDER_KM.length - 1]
-
-// A moved pin invalidates everything in flight. The generation counter is what
-// stops a slow 150 km answer from overwriting a fresh 5 km one.
 let generation = 0
 let inFlight: AbortController | null = null
+let retryTimer: number | undefined
+
+function clearRetryTimer(): void {
+  if (retryTimer !== undefined) window.clearInterval(retryTimer)
+  retryTimer = undefined
+}
+
+function wireRetry(point: Point, failure: NearbyFailure): void {
+  const button = results.querySelector<HTMLButtonElement>('[data-retry]')
+  if (button === null) return
+
+  button.addEventListener('click', () => {
+    if (button.disabled) return
+    clearRetryTimer()
+    void search(point)
+  })
+
+  if (failure.kind !== 'rate-limited') return
+  let remaining = failure.retryAfterSeconds
+  retryTimer = window.setInterval(() => {
+    remaining -= 1
+    if (remaining > 0) {
+      button.textContent = `Retry in ${remaining} seconds`
+      return
+    }
+    clearRetryTimer()
+    button.disabled = false
+    button.textContent = 'Try again'
+  }, 1000)
+}
 
 async function search(point: Point): Promise<void> {
+  clearRetryTimer()
   const mine = generation + 1
   generation = mine
   inFlight?.abort()
@@ -49,7 +77,6 @@ async function search(point: Point): Promise<void> {
   inFlight = controller
 
   results.innerHTML = renderSearching(LADDER_KM[0])
-  // Markers from the previous pin are wrong the moment a new search starts.
   mapInput.clearResults()
 
   try {
@@ -63,14 +90,15 @@ async function search(point: Point): Promise<void> {
   } catch (error) {
     if (mine !== generation) return
     if (error instanceof Error && error.name === 'AbortError') return
-    const failure: NearbyFailure =
-      error instanceof NearbyError ? error.failure : { kind: 'malformed' }
+    const failure: NearbyFailure = error instanceof NearbyError
+      ? error.failure
+      : { kind: 'malformed' }
     results.innerHTML = renderFailure(failure)
     mapInput.clearResults()
+    wireRetry(point, failure)
   }
 }
 
-/** Brings the card for a clicked marker into view and flags it briefly. */
 function revealCard(result: NumberedResult): void {
   const card = document.getElementById(result.domId)
   if (card === null) return
@@ -81,9 +109,7 @@ function revealCard(result: NumberedResult): void {
 
 const mapInput = createMapPinInput(
   mapElement,
-  (point) => {
-    void search(point)
-  },
+  (point) => { void search(point) },
   DEBOUNCE_MS,
   revealCard,
 )
