@@ -1,6 +1,6 @@
 /** MapLibre pin input and numbered result-marker layer. */
 
-import maplibregl, { LngLatBounds, Marker } from 'maplibre-gl'
+import { LngLatBounds, Map, Marker, NavigationControl } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Point } from './api'
 import { DEBOUNCE_MS, MAP_STYLE_URL } from './config'
@@ -29,13 +29,13 @@ export function createMapPinInput(
   debounceMs: number = DEBOUNCE_MS,
   onResultSelected?: (result: NumberedResult) => void,
 ): PinInput {
-  const map = new maplibregl.Map({
+  const map = new Map({
     container,
     style: MAP_STYLE_URL,
     center: [-104.9903, 39.7392],
     zoom: 10,
   })
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
+  map.addControl(new NavigationControl({ showCompass: false }), 'top-left')
 
   const resultMarkers: Marker[] = []
   let marker: Marker | null = null
@@ -50,7 +50,7 @@ export function createMapPinInput(
     if (marker === null) {
       const element = markerElement('locus-pin')
       element.setAttribute('aria-label', 'Selected location')
-      marker = new maplibregl.Marker({ element, draggable: true, anchor: 'center' })
+      marker = new Marker({ element, draggable: true, anchor: 'center' })
         .setLngLat([latlng.lng, latlng.lat])
         .addTo(map)
       marker.on('drag', () => {
@@ -91,7 +91,7 @@ export function createMapPinInput(
           }
         })
 
-        const resultMarker = new maplibregl.Marker({ element, anchor: 'center' })
+        const resultMarker = new Marker({ element, anchor: 'center' })
           .setLngLat([result.lng, result.lat])
           .addTo(map)
         resultMarkers.push(resultMarker)
