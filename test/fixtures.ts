@@ -1,9 +1,5 @@
 import type { NearbyEntry, NearbyResponse } from '../src/api'
 
-/**
- * displayTitle defaults to null because most real rows have none, and because a
- * default that duplicated title silently swallowed overrides of title alone.
- */
 export function makeEntry(overrides: Partial<NearbyEntry> = {}): NearbyEntry {
   return {
     id: 'Q1',
@@ -32,6 +28,7 @@ export function makeEntries(count: number): NearbyEntry[] {
       id: `Q${index}`,
       dateStart: `${1900 + index}-01-01`,
       distanceKm: index + 1,
+      sourceUrl: `https://www.wikidata.org/wiki/Q${index}`,
     }),
   )
 }
@@ -43,7 +40,8 @@ export function makeResponse(
 ): NearbyResponse {
   return {
     datasetVersion: 'dump-v0.6.1',
-    engine: 'geohistory-nearby@0.1.0',
+    datasetBuild: 'dump-v0.6.1+struct-v0.7.2+reach-v0.3+prune4',
+    engine: 'geohistory-nearby@0.1.1',
     radiusKm,
     coordinateMode: 'direct',
     significanceFloor: 0.05,

@@ -2,84 +2,68 @@
 
 *Drop a pin and discover what happened near that place.*
 
-Locus is a standalone, privacy-first web applet that consumes the public [GeoHistory](https://github.com/noffsingercb/GeoHistory) API. GeoHistory owns the historical dataset, ingest and scoring pipeline, deterministic query engine, and read-only API. Locus owns only presentation and client-side product policy.
-
-Locus stores nothing. Caller coordinates must remain in memory and may be sent only to the configured GeoHistory API. They must never be logged, persisted, placed in a URL, included in analytics, or sent to any other service.
-
-## Status
-
-v0.1: map pin input, the radius ladder, the result list, and the escalated, short, empty, and failure states. Location sharing is deliberately not implemented; see [v0.2](#v02-location-sharing-not-in-this-release).
+Locus is a standalone, privacy-first client of the public [GeoHistory](https://github.com/noffsingercb/GeoHistory) API. GeoHistory owns the dataset and deterministic retrieval; Locus owns presentation and client product policy.
 
 ## How it works
 
-1. You click the map. The pin settles 400 ms after the last movement.
-2. Locus asks GeoHistory `POST /v1/nearby` for the closest records within 5 km.
-3. If fewer than 12 come back, it widens: 15 km, then 50 km, then 150 km, stopping at the first radius that answers.
-4. The radius actually used is stated above the list, so an escalated answer never looks like a local one.
-
-The API selects by **distance** and returns that selected set in **date order**. Locus renders the response in the order it arrives and does not re-rank.
-
-### What is a client decision, and why
-
-| Decision | Lives here because |
-| --- | --- |
-| The 5/15/50/150 km ladder | It is measured product policy. The API answers one radius per call. |
-| Stopping at 12 results | Result density is an interaction choice. |
-| Excluding births and deaths | "What happened here" is an interpretation. Roughly 85% of rows within 5 km of a dense city are biography; without this the list answers a different question. It is sent as a generic `excludeCategories` filter, not a special case upstream. |
-| Empty-state and escalation copy | Presentation. |
-| Debounce timing | Interaction. |
-
-The dataset, the distance maths, the deterministic tie-break chain, and the coordinate-quality policy (`coordinateMode`) all live upstream and are not reimplemented here.
+A click or drag settles for 400 ms, then Locus walks 5 / 15 / 50 / 150 km sequentially until 12 attributed records are available. GeoHistory selects by distance and returns that set in date order; Locus preserves the order. Births and deaths are excluded by client policy. Wide-rung results can still be founding-heavy; that is an explicit v0.1 corpus limitation, not a hidden ranking claim.
 
 ## Privacy
 
-- The coordinate exists in memory only. It is never written to the URL, history, `localStorage`, `sessionStorage`, cookies, or any analytics or error-reporting payload.
-- It travels in the JSON body of a `POST`, never a query string, because URLs are the most-retained part of an HTTP request.
-- Map tiles are fetched by viewport tile index only; the pin coordinate is never appended to a third-party URL.
-- There is no backend, no account, no tracking script, and no saved state.
-- `public/_headers` sets `Referrer-Policy: no-referrer` and `Permissions-Policy: geolocation=()`.
+- The coordinate remains in memory and is sent only in the JSON body of `POST /v1/nearby`.
+- It never enters a URL, browser history, storage, cookies, analytics, telemetry, or feedback.
+- The API call sets `referrerPolicy: no-referrer`.
+- The page uses `strict-origin-when-cross-origin`: tile providers receive only the Locus origin, never a path or coordinate.
+- Tiles are requested by z/x/y viewport index; no exact pin coordinate is appended.
+- `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of v0.1.
 
-These are enforced by tests in `test/privacy.test.ts`, which scan the source and fail on a forbidden API, on a network call outside `src/api.ts`, or on any reference to `geolocation`.
+The static privacy suite scans TypeScript plus `index.html` and `public/_headers`. It is a regression guard, not a substitute for the required browser smoke test.
 
-### v0.2: location sharing, not in this release
+## Attribution invariant
 
-The input layer is structured so a "use my location" affordance can be added beside the map without restructuring. When it ships it will require an explicit user action, will never run on page load, will never be the default input, and a denial will be a normal state that leaves pin input working — not an error.
+Every displayed event must carry a usable HTTP(S) source URL from GeoHistory. A response containing an unattributed row is rejected as malformed; Locus never displays that row with a substitute or a “missing source” placeholder. Page-level CC BY-SA and dataset attribution supplement, but do not replace, the per-item source link.
 
-## Development
+## Local development against GeoHistory
 
-Requirements: Node.js 20 or later.
+Use two PowerShell windows. Closing the API window stops the service.
+
+**Window 1 — GeoHistory API**
 
 ```powershell
+$ErrorActionPreference = 'Stop'
+Set-Location 'C:\path\to\GeoHistory-nearby-validation'
+$env:GEOHISTORY_DB = 'C:\path\to\events.sqlite'
+$env:PORT = '8799'
+$env:ALLOW_DEV_ORIGINS = 'true'
+$env:ALLOW_NO_ORIGIN_POST = 'true' # needed only for shell probes with no Origin
+npm run serve
+```
+
+**Window 2 — Locus**
+
+```powershell
+$ErrorActionPreference = 'Stop'
+Set-Location 'C:\path\to\locus'
+'VITE_GEOHISTORY_API_BASE_URL=http://localhost:8799' | Set-Content '.env.local'
 npm install
-Copy-Item .env.example .env
 npm run typecheck
 npm test
 npm run build
 npm run dev
 ```
 
-Set `VITE_GEOHISTORY_API_BASE_URL` to the base URL of the GeoHistory service. It is a public, unauthenticated endpoint; this variable is configuration, not a secret.
+A browser supplies `Origin: http://localhost:5173`. A shell probe must either supply that header or use the explicit `ALLOW_NO_ORIGIN_POST=true` development escape hatch. Never widen production CORS for local convenience.
 
-Against a locally running GeoHistory instance, start the API with `ALLOW_DEV_ORIGINS=true` so the dev-server origin is accepted.
+## Tiles and deployment
 
-## Deployment
+The default is keyless CARTO Voyager raster tiles, with OpenStreetMap and CARTO attribution. `VITE_TILE_URL` and `VITE_TILE_ATTRIBUTION` can replace the provider together without a code change. Browser validation must confirm that tiles load; the module test suite cannot establish third-party availability.
 
-Static output only: `npm run build` emits `dist`, which Cloudflare Pages serves directly. Build command `npm run build`, output directory `dist`, and one environment variable, `VITE_GEOHISTORY_API_BASE_URL`.
+Cloudflare Pages builds with `npm run build` and serves `dist`. Set `VITE_GEOHISTORY_API_BASE_URL` to the deployed API origin. Append the exact Locus production origin—scheme and hostname, no trailing slash—to `ALLOWED_ORIGIN` in the GeoHistory Render dashboard. Preview hostnames remain refused; no wildcard.
 
-**Before the deployed app can work,** the Locus production origin must be appended to the comma-separated `ALLOWED_ORIGIN` value on the GeoHistory Render service dashboard — scheme and hostname, no trailing slash, no wildcard. `render.yaml` declares that key with `sync: false`, so a blueprint sync will not set it.
+## v0.2 location sharing
 
-Cloudflare Pages preview hostnames are refused by design and are not allowlisted. Test preview builds against a local API instead.
+Not in this release. A future “Use my location” action must be explicit, never automatic or default, and denial must leave pin input working.
 
 ## Repository boundary
 
-- **This repository:** static client, map interaction, result presentation, client-side radius policy, and user-facing states.
-- **GeoHistory:** dataset, ingest/scoring pipeline, deterministic retrieval, and the read-only API.
-- **Never here:** a dataset copy, a reimplementation of the engine, analytics, accounts, tracking, or a backend.
-
-## Attribution
-
-Locus code is licensed under the [MIT License](LICENSE).
-
-Historical event data is supplied by GeoHistory. Every displayed event carries a per-item source link from `source_url`; a row without a usable link renders without one and is counted as an attribution defect in tests, never given a substitute. Wikipedia-derived content is distributed under [CC BY-SA](https://creativecommons.org/licenses/by-sa/4.0/); see [DATA-ATTRIBUTION.md](DATA-ATTRIBUTION.md).
-
-Map tiles © OpenStreetMap contributors, used under the [ODbL](https://www.openstreetmap.org/copyright).
+Locus contains no dataset, engine, backend, account, tracking, or distance implementation. Code is MIT licensed; historical data is supplied by GeoHistory and subject to the attribution terms in [DATA-ATTRIBUTION.md](DATA-ATTRIBUTION.md).
