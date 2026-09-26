@@ -6,12 +6,13 @@ const RAW_BASE_URL: string =
 export const API_BASE_URL: string = RAW_BASE_URL.replace(/\/+$/, '')
 
 /**
- * CARTO Voyager is the keyless production default. Both values remain
- * configurable so deployment is not coupled permanently to one tile service.
+ * CARTO Voyager is the keyless production default. The URL is assembled in two
+ * pieces so tooling cannot mistake Leaflet's brace placeholders for a template.
  */
-export const TILE_URL: string =
-  import.meta.env.VITE_TILE_URL ??
-  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+const DEFAULT_TILE_URL =
+  'https://' + '{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+
+export const TILE_URL: string = import.meta.env.VITE_TILE_URL ?? DEFAULT_TILE_URL
 
 export const TILE_ATTRIBUTION: string =
   import.meta.env.VITE_TILE_ATTRIBUTION ??
