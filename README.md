@@ -13,8 +13,8 @@ A click or drag settles for 400 ms, then Locus walks 5 / 15 / 50 / 150 km sequen
 - The coordinate remains in memory and is sent only in the JSON body of `POST /v1/nearby`.
 - It never enters a URL, browser history, storage, cookies, analytics, telemetry, or feedback.
 - The API call sets `referrerPolicy: no-referrer`.
-- The page uses `strict-origin-when-cross-origin`: tile providers receive only the Locus origin, never a path or coordinate.
-- Tiles are requested by z/x/y viewport index; no exact pin coordinate is appended.
+- The page uses `strict-origin-when-cross-origin`: the map provider receives only the Locus origin, never a path or coordinate.
+- Vector tiles are requested by z/x/y viewport index; no exact pin coordinate is appended.
 - `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of v0.1.
 
 The static privacy suite scans TypeScript plus `index.html` and `public/_headers`. It is a regression guard, not a substitute for the required browser smoke test.
@@ -25,7 +25,7 @@ Every displayed event must carry a usable HTTP(S) source URL from GeoHistory. A 
 
 ## Local development against GeoHistory
 
-Use two PowerShell windows. Closing the API window stops the service.
+Use two PowerShell windows. Closing the API window stops the service. Use explicit ports so a stale Vite process cannot silently move the client to an origin the API has not allowed.
 
 **Window 1 — GeoHistory API**
 
@@ -34,7 +34,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location 'C:\path\to\GeoHistory-nearby-validation'
 $env:GEOHISTORY_DB = 'C:\path\to\events.sqlite'
 $env:PORT = '8799'
-$env:ALLOW_DEV_ORIGINS = 'true'
+$env:ALLOWED_ORIGIN = 'http://localhost:5173'
 $env:ALLOW_NO_ORIGIN_POST = 'true' # needed only for shell probes with no Origin
 npm run serve
 ```
@@ -49,14 +49,14 @@ npm install
 npm run typecheck
 npm test
 npm run build
-npm run dev
+npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-A browser supplies `Origin: http://localhost:5173`. A shell probe must either supply that header or use the explicit `ALLOW_NO_ORIGIN_POST=true` development escape hatch. Never widen production CORS for local convenience.
+A browser supplies `Origin: http://localhost:5173`. `--strictPort` fails visibly instead of moving to 5174 and creating a CORS mismatch. A shell probe must either supply the configured Origin header or use the explicit `ALLOW_NO_ORIGIN_POST=true` development escape hatch. Never widen production CORS for local convenience.
 
-## Tiles and deployment
+## Map and deployment
 
-The default is keyless CARTO Voyager raster tiles, with OpenStreetMap and CARTO attribution. `VITE_TILE_URL` and `VITE_TILE_ATTRIBUTION` can replace the provider together without a code change. Browser validation must confirm that tiles load; the module test suite cannot establish third-party availability.
+The default is the OpenFreeMap Positron MapLibre style. The public instance requires no registration, API key, cookie, or view quota. MapLibre reads the vector style directly; `VITE_MAP_STYLE_URL` can replace the complete style without changing map logic. Browser validation must still confirm provider availability and attribution because module tests cannot establish a third party's live behavior.
 
 Cloudflare Pages builds with `npm run build` and serves `dist`. Set `VITE_GEOHISTORY_API_BASE_URL` to the deployed API origin. Append the exact Locus production origin—scheme and hostname, no trailing slash—to `ALLOWED_ORIGIN` in the GeoHistory Render dashboard. Preview hostnames remain refused; no wildcard.
 

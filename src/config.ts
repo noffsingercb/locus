@@ -6,17 +6,12 @@ const RAW_BASE_URL: string =
 export const API_BASE_URL: string = RAW_BASE_URL.replace(/\/+$/, '')
 
 /**
- * CARTO Voyager is the keyless production default. The URL is assembled in two
- * pieces so tooling cannot mistake Leaflet's brace placeholders for a template.
+ * OpenFreeMap is the keyless production default. It publishes MapLibre styles
+ * backed by OpenStreetMap/OpenMapTiles data with no account, key, or cookie.
+ * Deployments can replace the complete style URL without changing map logic.
  */
-const DEFAULT_TILE_URL =
-  'https://' + '{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-
-export const TILE_URL: string = import.meta.env.VITE_TILE_URL ?? DEFAULT_TILE_URL
-
-export const TILE_ATTRIBUTION: string =
-  import.meta.env.VITE_TILE_ATTRIBUTION ??
-  '&copy; OpenStreetMap contributors &copy; CARTO'
+export const MAP_STYLE_URL: string =
+  import.meta.env.VITE_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/positron'
 
 export const LADDER_KM = [5, 15, 50, 150] as const
 export const TARGET_RESULTS = 12

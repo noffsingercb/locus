@@ -1,11 +1,10 @@
-/** Leaflet pin input and numbered result-marker layer. */
+/** MapLibre pin input and numbered result-marker layer. */
 
-import * as L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import maplibregl, { LngLatBounds, Marker } from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Point } from './api'
-import { DEBOUNCE_MS, TILE_ATTRIBUTION, TILE_URL } from './config'
+import { DEBOUNCE_MS, MAP_STYLE_URL } from './config'
 import type { NumberedResult } from './result-markers'
-import { escapeHtml } from './view'
 
 export interface PinInput {
   showResults(results: readonly NumberedResult[]): void
@@ -13,10 +12,15 @@ export interface PinInput {
   destroy(): void
 }
 
-const RESULT_MARKER_PX = 26
-
-function normalize(latlng: L.LatLng): Point {
+function normalize(latlng: { lat: number; lng: number }): Point {
   return { lat: latlng.lat, lng: ((((latlng.lng + 180) % 360) + 360) % 360) - 180 }
+}
+
+function markerElement(className: string, text?: string): HTMLDivElement {
+  const element = document.createElement('div')
+  element.className = className
+  if (text !== undefined) element.textContent = text
+  return element
 }
 
 export function createMapPinInput(
@@ -25,20 +29,17 @@ export function createMapPinInput(
   debounceMs: number = DEBOUNCE_MS,
   onResultSelected?: (result: NumberedResult) => void,
 ): PinInput {
-  const map = L.map(container, {
-    center: [39.7392, -104.9903],
-    zoom: 11,
-    worldCopyJump: true,
+  const map = new maplibregl.Map({
+    container,
+    style: MAP_STYLE_URL,
+    center: [-104.9903, 39.7392],
+    zoom: 10,
+    attributionControl: true,
   })
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
 
-  L.tileLayer(TILE_URL, {
-    maxZoom: 20,
-    attribution: TILE_ATTRIBUTION,
-  }).addTo(map)
-
-  const icon = L.divIcon({ className: 'locus-pin', iconSize: [20, 20], iconAnchor: [10, 10] })
-  const resultLayer = L.layerGroup().addTo(map)
-  let marker: L.Marker | null = null
+  const resultMarkers: Marker[] = []
+  let marker: Marker | null = null
   let timer: number | undefined
 
   const settle = (point: Point): void => {
@@ -46,60 +47,70 @@ export function createMapPinInput(
     timer = window.setTimeout(() => onSettled(point), debounceMs)
   }
 
-  const place = (latlng: L.LatLng): void => {
+  const place = (latlng: { lat: number; lng: number }): void => {
     if (marker === null) {
-      marker = L.marker(latlng, { icon, draggable: true, keyboard: true }).addTo(map)
+      const element = markerElement('locus-pin')
+      element.setAttribute('aria-label', 'Selected location')
+      marker = new maplibregl.Marker({ element, draggable: true, anchor: 'center' })
+        .setLngLat([latlng.lng, latlng.lat])
+        .addTo(map)
       marker.on('drag', () => {
-        if (marker !== null) settle(normalize(marker.getLatLng()))
+        if (marker !== null) settle(normalize(marker.getLngLat()))
       })
       marker.on('dragend', () => {
-        if (marker !== null) settle(normalize(marker.getLatLng()))
+        if (marker !== null) settle(normalize(marker.getLngLat()))
       })
     } else {
-      marker.setLatLng(latlng)
+      marker.setLngLat([latlng.lng, latlng.lat])
     }
     settle(normalize(latlng))
   }
 
-  map.on('click', (event: L.LeafletMouseEvent) => place(event.latlng))
+  map.on('click', (event) => place(event.lngLat))
+
+  const clearResults = (): void => {
+    while (resultMarkers.length > 0) resultMarkers.pop()?.remove()
+  }
 
   return {
     showResults(numbered: readonly NumberedResult[]): void {
-      resultLayer.clearLayers()
+      clearResults()
       if (numbered.length === 0) return
-      const points: L.LatLngTuple[] = []
-      const half = RESULT_MARKER_PX / 2
 
+      const bounds = new LngLatBounds()
       for (const result of numbered) {
-        const numberIcon = L.divIcon({
-          className: 'locus-result-pin',
-          html: String(result.number),
-          iconSize: [RESULT_MARKER_PX, RESULT_MARKER_PX],
-          iconAnchor: [half, half],
+        const element = markerElement('locus-result-pin', String(result.number))
+        element.title = `${result.number}. ${result.title}`
+        element.setAttribute('role', 'button')
+        element.setAttribute('tabindex', '0')
+        element.setAttribute('aria-label', `${result.number}. ${result.title}`)
+        element.addEventListener('click', () => onResultSelected?.(result))
+        element.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onResultSelected?.(result)
+          }
         })
-        const resultMarker = L.marker([result.lat, result.lng], {
-          icon: numberIcon,
-          keyboard: true,
-          title: `${result.number}. ${result.title}`,
-        })
-        resultMarker.bindTooltip(`${result.number}. ${escapeHtml(result.title)}`, { direction: 'top' })
-        resultMarker.on('click', () => onResultSelected?.(result))
-        resultMarker.addTo(resultLayer)
-        points.push([result.lat, result.lng])
+
+        const resultMarker = new maplibregl.Marker({ element, anchor: 'center' })
+          .setLngLat([result.lng, result.lat])
+          .addTo(map)
+        resultMarkers.push(resultMarker)
+        bounds.extend([result.lng, result.lat])
       }
 
       if (marker !== null) {
-        const pinAt = marker.getLatLng()
-        points.push([pinAt.lat, pinAt.lng])
+        const pinAt = marker.getLngLat()
+        bounds.extend([pinAt.lng, pinAt.lat])
       }
-      const bounds = L.latLngBounds(points)
-      if (!map.getBounds().contains(bounds)) map.fitBounds(bounds, { padding: [32, 32] })
+      if (!bounds.isEmpty() && !map.getBounds().contains(bounds)) {
+        map.fitBounds(bounds, { padding: 32, maxZoom: 14 })
+      }
     },
-    clearResults(): void {
-      resultLayer.clearLayers()
-    },
+    clearResults,
     destroy(): void {
-      resultLayer.clearLayers()
+      clearResults()
+      marker?.remove()
       if (timer !== undefined) window.clearTimeout(timer)
       map.remove()
     },

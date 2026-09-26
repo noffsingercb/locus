@@ -25,7 +25,7 @@ app.innerHTML = `
     Event data from <a href="https://github.com/noffsingercb/GeoHistory" rel="noopener noreferrer">GeoHistory</a>,
     derived from Wikidata and Wikipedia and reused under
     <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">CC BY-SA</a>.
-    Each displayed result links to its source. Map data &copy; OpenStreetMap contributors; default tiles &copy; CARTO.
+    Each displayed result links to its source. Map data from OpenStreetMap via OpenFreeMap/OpenMapTiles.
   </footer>
 `
 

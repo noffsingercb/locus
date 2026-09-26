@@ -38,18 +38,20 @@ describe('coordinate containment', () => {
     expect(api).not.toContain('?lat=')
   })
 
-  it('keeps the page policy compatible with identifiable tile requests', () => {
+  it('keeps the page policy compatible with identifiable map requests', () => {
     const html = readFileSync(join(ROOT, 'index.html'), 'utf8')
     const headers = readFileSync(join(ROOT, 'public', '_headers'), 'utf8')
     expect(html).toContain('content="strict-origin-when-cross-origin"')
     expect(headers).toContain('Referrer-Policy: strict-origin-when-cross-origin')
   })
 
-  it('uses a configurable production tile provider', () => {
+  it('uses configurable keyless OpenFreeMap instead of keyed or volunteer raster tiles', () => {
     const config = readFileSync(join(SOURCE_DIR, 'config.ts'), 'utf8')
     const map = readFileSync(join(SOURCE_DIR, 'map-input.ts'), 'utf8')
-    expect(config).toContain('VITE_TILE_URL')
-    expect(config).toContain('basemaps.cartocdn.com')
+    expect(config).toContain('VITE_MAP_STYLE_URL')
+    expect(config).toContain('tiles.openfreemap.org/styles/positron')
+    expect(config).not.toContain('basemaps.cartocdn.com')
+    expect(map).toContain("from 'maplibre-gl'")
     expect(map).not.toContain('tile.openstreetmap.org')
   })
 
