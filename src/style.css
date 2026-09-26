@@ -1,0 +1,65 @@
+:root {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #17221a;
+  background: #eef1e8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+body,
+#app {
+  min-height: 100vh;
+}
+
+#app {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.shell {
+  width: min(42rem, 100%);
+  padding: clamp(2rem, 8vw, 5rem);
+  border: 1px solid #99a38e;
+  background: #f8f7f1;
+  box-shadow: 0 1rem 3rem rgb(28 44 32 / 12%);
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: #53634f;
+  font-family: Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(3rem, 12vw, 6rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+}
+
+.lede {
+  margin: 1.5rem 0 2.5rem;
+  color: #365641;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+}
+
+p:last-child {
+  margin-bottom: 0;
+  line-height: 1.6;
+}
