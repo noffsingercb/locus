@@ -103,9 +103,7 @@ export function createMapPinInput(
         const pinAt = marker.getLngLat()
         bounds.extend([pinAt.lng, pinAt.lat])
       }
-      if (!bounds.isEmpty() && !map.getBounds().contains(bounds)) {
-        map.fitBounds(bounds, { padding: 32, maxZoom: 14 })
-      }
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 32, maxZoom: 14 })
     },
     clearResults,
     destroy(): void {
