@@ -34,7 +34,6 @@ export function createMapPinInput(
     style: MAP_STYLE_URL,
     center: [-104.9903, 39.7392],
     zoom: 10,
-    attributionControl: true,
   })
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
 
