@@ -28,7 +28,7 @@ export function makeEntries(count: number): NearbyEntry[] {
       id: `Q${index}`,
       dateStart: `${1900 + index}-01-01`,
       distanceKm: index + 1,
-      sourceUrl: `https://www.wikidata.org/wiki/Q${index}`,
+      sourceUrl: 'https://www.wikidata.org/wiki/Q' + index,
     }),
   )
 }
