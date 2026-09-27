@@ -1,0 +1,90 @@
+/*
+ * Locus theme -- the single source of truth for design tokens and base
+ * element styles.
+ *
+ * This lives in public/ rather than src/ on purpose. Anything imported from
+ * src/ is bundled and fingerprinted by Vite, which a hand-written HTML file
+ * cannot link to reliably. Files in public/ are copied to the build root
+ * verbatim, so the applet (index.html) and the plain HTML pages
+ * (/how-it-works, /why, /resources, /faq, /privacy) all reference this one
+ * file at a stable path.
+ *
+ * Change a token here and it changes everywhere, including the app. That is
+ * the entire point: the alternative was a second copy of the palette that
+ * drifts the first time a colour gets adjusted.
+ *
+ * App-specific rules do not belong here. See src/style.css for those.
+ */
+
+:root {
+	color-scheme: light;
+
+	--ink: #171b22;
+	--ink-soft: #5b6472;
+	--line: #d7dce4;
+	--paper: #f7f9fc;
+
+	/*
+	 * Locus is the spatial sibling to Circa's temporal register, so the
+	 * palette is deliberately a complement rather than a copy: Circa's warm
+	 * ribbon orange (#b25617) answered by a deep cartographic blue.
+	 *
+	 * --accent is the only accent that ever carries white text or sits under
+	 * body copy; it measures about 6.4:1 on --paper, which passes AA for
+	 * normal-size text with room to spare. --accent-bright is decorative
+	 * only -- nothing legible goes on top of it. --accent-ink is for text on
+	 * an --accent-soft panel, where the accent itself is too close in value
+	 * to read comfortably. --accent-ring is the focus/active halo, kept as a
+	 * token so the app and the pages agree on it.
+	 */
+	--accent: #1b4f9c;
+	--accent-bright: #3f7fd1;
+	--accent-ink: #143a70;
+	--accent-soft: #e6eef9;
+	--accent-ring: rgba(27, 79, 156, 0.22);
+
+	--danger: #9b2226;
+
+	--radius: 10px;
+	--font: ui-serif, Georgia, 'Times New Roman', serif;
+	--font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--font-ui);
+	-webkit-font-smoothing: antialiased;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Honour a reduced-motion preference globally rather than per component: the
+   only motion in Locus is incidental (the FAQ caret, a card scroll), so there
+   is nothing here worth keeping for someone who asked for less of it. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}

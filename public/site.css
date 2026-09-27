@@ -1,0 +1,320 @@
+/*
+ * Page chrome, prose styles, and the shared site footer.
+ *
+ * theme.css owns the tokens and the base element styles. This file owns the
+ * things a written page needs -- a prose column, a small header, the FAQ
+ * disclosures -- plus the one footer used by both the applet and the pages.
+ *
+ * Circa keeps two copies of its footer rules, because Svelte scopes a
+ * component's styles and a hand-written HTML file cannot reach them. Locus has
+ * no component system to scope anything, so index.html links this file
+ * directly and there is exactly one copy of the footer. The link list is still
+ * duplicated per page, in markup; the test in test/pages.test.ts is what keeps
+ * the six copies from disagreeing with each other.
+ */
+
+.site-header {
+	max-width: 46rem;
+	margin: 0 auto;
+	padding: 2.25rem 1.25rem 0;
+}
+
+/*
+ * The wordmark is the way back into the applet, and on these pages it is the
+ * only way back. It is a link rather than a heading: every page has its own
+ * h1 below, and two competing headings would be a worse document outline than
+ * none.
+ */
+.wordmark {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-family: var(--font);
+	font-size: 1.35rem;
+	color: var(--ink);
+	text-decoration: none;
+	letter-spacing: -0.01em;
+}
+
+.wordmark:hover {
+	color: var(--accent);
+}
+
+.wordmark img {
+	width: 1.5rem;
+	height: 1.5rem;
+}
+
+.prose {
+	max-width: 46rem;
+	margin: 0 auto;
+	padding: 1.5rem 1.25rem 4rem;
+	line-height: 1.65;
+}
+
+.prose h1 {
+	font-family: var(--font);
+	font-size: 2.1rem;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+	margin: 0.75rem 0 0.5rem;
+}
+
+/*
+ * The sentence under the h1 that says what the page is for. Larger than body
+ * text and lighter, so the page announces itself before it starts explaining.
+ */
+.lede {
+	font-size: 1.05rem;
+	color: var(--ink-soft);
+	margin: 0 0 2.25rem;
+}
+
+.prose h2 {
+	font-family: var(--font);
+	font-size: 1.3rem;
+	margin: 2.5rem 0 0.6rem;
+}
+
+.prose h3 {
+	font-family: var(--font-ui);
+	font-size: 1rem;
+	margin: 1.75rem 0 0.4rem;
+}
+
+.prose p,
+.prose li {
+	max-width: 40rem;
+}
+
+.prose a {
+	color: var(--accent);
+}
+
+.prose ul,
+.prose ol {
+	padding-left: 1.1rem;
+}
+
+.prose li {
+	margin-bottom: 0.4rem;
+}
+
+.prose dt {
+	font-weight: 600;
+	margin-top: 1.25rem;
+}
+
+.prose dd {
+	margin: 0.3rem 0 0;
+	max-width: 40rem;
+}
+
+.prose code {
+	background: var(--accent-soft);
+	color: var(--accent-ink);
+	border-radius: 4px;
+	padding: 0.05rem 0.3rem;
+	font-size: 0.9em;
+}
+
+/*
+ * An aside that is worth reading but is not the argument of the page. Marked
+ * with a rule on the leading edge rather than a tinted box, so it stays
+ * legible on paper and does not compete with the accent colour.
+ */
+.note {
+	border-left: 2px solid var(--line);
+	padding: 0.1rem 0 0.1rem 0.9rem;
+	color: var(--ink-soft);
+	font-size: 0.92rem;
+	margin: 1.25rem 0;
+	max-width: 40rem;
+}
+
+/* A short table used on /how-it-works for the radius ladder. Plain rules
+   rather than a boxed grid, so it reads as part of the prose. */
+.prose table {
+	border-collapse: collapse;
+	font-size: 0.95rem;
+	margin: 1.25rem 0;
+	max-width: 40rem;
+	width: 100%;
+}
+
+.prose th,
+.prose td {
+	border-bottom: 1px solid var(--line);
+	padding: 0.45rem 0.6rem 0.45rem 0;
+	text-align: left;
+	vertical-align: top;
+}
+
+.prose th {
+	font-family: var(--font-ui);
+	font-size: 0.8rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--ink-soft);
+	font-weight: 600;
+}
+
+/* -------------------------------------------------------------------------- */
+/* FAQ disclosures                                                            */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Built on <details>/<summary>. Keyboard operation, the expanded/collapsed
+ * state announced to a screen reader, and in-page find opening a closed
+ * section to reach a match all come for free. The caret is drawn in CSS on the
+ * trailing edge, which means the default browser triangle has to be suppressed
+ * twice: list-style for the standards path, and ::-webkit-details-marker for
+ * older WebKit, which ignores the first.
+ */
+
+.prose h1 + .qa {
+	margin-top: 1.75rem;
+	border-top: 1px solid var(--line);
+}
+
+.qa {
+	border-bottom: 1px solid var(--line);
+	max-width: 40rem;
+}
+
+.qa summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.25rem;
+	padding: 0.95rem 0.15rem;
+	cursor: pointer;
+	font-family: var(--font);
+	font-size: 1.05rem;
+	line-height: 1.4;
+	list-style: none;
+}
+
+.qa summary::-webkit-details-marker {
+	display: none;
+}
+
+/*
+ * Two borders on a rotated square: the standard chevron, and the only version
+ * that inherits colour and scales with the text rather than shipping an icon
+ * font or an SVG for one glyph. flex: none keeps it from being squeezed by a
+ * long question.
+ */
+.qa summary::after {
+	content: '';
+	flex: none;
+	width: 0.45rem;
+	height: 0.45rem;
+	margin-right: 0.2rem;
+	border-right: 2px solid var(--ink-soft);
+	border-bottom: 2px solid var(--ink-soft);
+	transform: rotate(45deg);
+	transition: transform 120ms ease;
+}
+
+.qa[open] summary::after {
+	transform: rotate(-135deg);
+}
+
+.qa summary:hover {
+	color: var(--accent);
+}
+
+.qa summary:hover::after {
+	border-color: var(--accent);
+}
+
+.qa .answer {
+	padding: 0 0.15rem 1.15rem;
+}
+
+.qa .answer > :first-child {
+	margin-top: 0;
+}
+
+.qa .answer > :last-child {
+	margin-bottom: 0;
+}
+
+/*
+ * On paper, every answer. A printed FAQ showing eleven questions and no
+ * answers is a broken document, and print is exactly where nobody can click
+ * to open them.
+ */
+@media print {
+	.qa .answer {
+		display: block;
+	}
+
+	.qa summary::after {
+		display: none;
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* Site footer -- shared by the applet and the written pages                   */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * A footer rather than a header nav, deliberately, and for the same reason as
+ * Circa: most people meet Locus as a free tool and want the map, not a site to
+ * browse. Navigation above the map would be selling a website to someone who
+ * came for an applet. Below it, the links are there for anyone who finishes
+ * and wants to know how it worked.
+ *
+ * The applet's own copy omits the "Locus App" link: that page IS the app, and
+ * a link to the page you are already on is noise.
+ */
+.site-footer {
+	border-top: 1px solid var(--line);
+	margin-top: 2rem;
+	padding: 1.5rem 1.25rem 3rem;
+}
+
+.site-footer .inner {
+	max-width: 46rem;
+	margin: 0 auto;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.25rem;
+	font-size: 0.85rem;
+}
+
+.site-footer a {
+	color: var(--ink-soft);
+}
+
+.site-footer a:hover {
+	color: var(--accent);
+}
+
+.site-footer .spacer {
+	flex: 1;
+}
+
+/*
+ * Below this the footer links stack rather than wrapping mid-row, which reads
+ * as a list of destinations instead of a broken line. Matches the 640px
+ * breakpoint the app already uses; a second, disagreeing breakpoint is worse
+ * than a slightly imperfect one.
+ */
+@media (max-width: 640px) {
+	.site-footer .inner {
+		flex-direction: column;
+	}
+
+	.site-footer .spacer {
+		display: none;
+	}
+}
+
+/* The applet footer is wider than a prose column, because the app itself is. */
+.site-footer--app .inner {
+	max-width: 72rem;
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--
+			Origin only, never the path. A blanket no-referrer is what got every
+			map tile refused during v0.1 development, and the privacy cost of
+			sending an origin is nil: Locus never puts a coordinate in a URL.
+		-->
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
+		<title>Privacy — Locus</title>
+		<meta name="description" content="Exactly what Locus does and does not do with the pin you place: no accounts, no cookies, no analytics, no coordinate in a URL, and nothing stored anywhere." />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<!--
+			Absolute paths. These files are copied to the build root verbatim and
+			are never processed by Vite, so the path is ours to choose, and the
+			site is served from a domain root.
+		-->
+		<link rel="stylesheet" href="/theme.css" />
+		<link rel="stylesheet" href="/site.css" />
+	</head>
+	<body>
+		<header class="site-header">
+			<a class="wordmark" href="/">Locus</a>
+		</header>
+
+		<main class="prose">
+			<h1>Privacy</h1>
+			<p class="lede">
+				A precise coordinate is sensitive information. This page says exactly what happens to
+				yours, in specifics rather than reassurances.
+			</p>
+
+			<h2>What Locus does with your pin</h2>
+			<p>
+				When you place a pin, its coordinate is held in the page you are looking at and sent in
+				the body of one request to the
+				<a href="https://github.com/noffsingercb/GeoHistory" rel="noopener">GeoHistory</a> API, so
+				that the API can answer which records are nearest. When you move the pin or close the tab,
+				it is gone. That is the entire lifecycle.
+			</p>
+
+			<h2>What Locus does not do</h2>
+			<ul>
+				<li>No accounts, sign-in, profiles or saved searches.</li>
+				<li>No cookies, local storage, session storage or other browser storage of any kind.</li>
+				<li>No analytics, tracking pixels, advertising tags or third-party scripts.</li>
+				<li>
+					No coordinate in the address bar, so nothing lands in your browser history, in a
+					shareable link, or in a referrer header.
+				</li>
+				<li>
+					No coordinate sent anywhere except the one GeoHistory request. Map tiles are fetched by
+					viewport tile index and carry no pin.
+				</li>
+				<li>No use of your device location, and no ability to ask for it.</li>
+				<li>No server of its own. Locus is static files; there is nowhere here to log anything.</li>
+			</ul>
+
+			<h2>How that is enforced rather than promised</h2>
+			<p>
+				Claims like these are worth little on their own, so they are held in place mechanically:
+			</p>
+			<ul>
+				<li>
+					The request that carries the coordinate uses <code>POST</code> with the coordinate in
+					the body, specifically so it cannot appear in a URL, a proxy log, or a referrer.
+				</li>
+				<li>
+					That request sets a <code>no-referrer</code> policy at its own call site, so the API is
+					not told which page made it.
+				</li>
+				<li>
+					The site sends <code>Permissions-Policy: geolocation=()</code>, which makes the browser
+					refuse the location API even if some future dependency asked for it.
+				</li>
+				<li>
+					An automated test fails the build if any source file references browser storage,
+					navigation state, a beacon, or the location API, or if network calls appear in more than
+					the single module allowed to make them.
+				</li>
+			</ul>
+			<p class="note">
+				The page-level referrer policy sends the origin — <code>locustimeline.org</code> — and
+				never the path, because map providers refuse tiles to entirely unidentifiable clients.
+				Since no coordinate is ever in a path, there is no path worth hiding.
+			</p>
+
+			<h2>What the API sees</h2>
+			<p>
+				GeoHistory receives the coordinate, a radius, and the filters Locus applies. Its access
+				logs record the request path, the status, the duration and a truncated client address; the
+				request body is not logged, so the coordinate is not written down there either. The
+				service is rate-limited per client, which is the one reason it keeps any client
+				identifier at all.
+			</p>
+
+			<h2>The hosting</h2>
+			<p>
+				The site is static files on
+				<a href="https://pages.cloudflare.com" rel="noopener">Cloudflare Pages</a> and the
+				basemap comes from <a href="https://openfreemap.org" rel="noopener">OpenFreeMap</a>.
+				Both see ordinary web requests — a page, a stylesheet, map tiles for the area you are
+				looking at — as any host and any map provider must. Neither is given your pin, and neither
+				is asked to run any code on Locus's behalf.
+			</p>
+
+			<h2>If this ever changes</h2>
+			<p>
+				A future version may add a "use my location" button. If it does, it will be an explicit
+				action you take, never automatic and never the default, a refusal will be an ordinary
+				outcome, and the coordinate will be handled exactly as a dropped pin is today. Nothing on
+				this page is planned to be relaxed; if something has to be, it will be changed here first.
+			</p>
+			<p>
+				The source is public at
+				<a href="https://github.com/noffsingercb/locus" rel="noopener">github.com/noffsingercb/locus</a>,
+				which means none of the above has to be taken on trust.
+			</p>
+		</main>
+
+		<footer class="site-footer">
+			<div class="inner">
+				<a href="/">Locus App</a>
+				<a href="/why">Why this exists</a>
+				<a href="/how-it-works">How this works</a>
+				<a href="/resources">Resources</a>
+				<a href="/faq">FAQ</a>
+				<a href="/privacy">Privacy</a>
+				<span class="spacer"></span>
+				<a class="who" href="https://www.linkedin.com/in/noffsingercb/" rel="noopener">
+					By Ben Noffsinger
+				</a>
+			</div>
+		</footer>
+	</body>
+</html>

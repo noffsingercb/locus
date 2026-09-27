@@ -1,43 +1,240 @@
-:root {
-  color-scheme: light;
-  --ink: #1b1b1f;
-  --muted: #5f6470;
-  --line: #dfe1e6;
-  --accent: #b4462c;
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+/*
+ * Applet-only styles.
+ *
+ * The palette, the base element styles and the shared site footer now live in
+ * public/theme.css and public/site.css, which index.html links directly and
+ * every hand-written page links too. This file holds only what the map surface
+ * and the result list need, expressed in those tokens -- so changing the
+ * accent in one place changes the app and the written pages together.
+ *
+ * Nothing here may assume a colour literal. --accent-ring exists precisely so
+ * the focus and active halos stop being hand-mixed rgba() values that drift
+ * away from the accent they are meant to echo.
+ */
+
+#app {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
 }
-* { box-sizing: border-box; }
-body { margin: 0; color: var(--ink); background: #fbfaf8; }
-#app { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
-.eyebrow { margin: 0; font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.masthead h1 { margin: .2rem 0 0; font-size: 2rem; }
-.lede { margin: .2rem 0 1.25rem; color: var(--muted); }
-.layout { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
-@media (min-width: 60rem) { .layout { grid-template-columns: 1.15fr 1fr; align-items: start; } }
-.map { height: 60vh; min-height: 20rem; border: 1px solid var(--line); border-radius: .75rem; overflow: hidden; }
-.locus-pin { width: 20px; height: 20px; background: var(--accent); border: 3px solid #fff; border-radius: 50%; box-shadow: 0 1px 6px rgba(0,0,0,.35); cursor: grab; }
-.locus-pin:active { cursor: grabbing; }
+
+.masthead {
+  display: flex;
+  flex-direction: column;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.masthead h1 {
+  font-family: var(--font);
+  margin: 0.2rem 0 0;
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin: 0.2rem 0 1.25rem;
+  color: var(--ink-soft);
+}
+
+.layout {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 60rem) {
+  .layout {
+    grid-template-columns: 1.15fr 1fr;
+    align-items: start;
+  }
+}
+
+.map {
+  height: 60vh;
+  min-height: 20rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.locus-pin {
+  width: 20px;
+  height: 20px;
+  background: var(--accent);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}
+
+.locus-pin:active {
+  cursor: grabbing;
+}
+
+/*
+ * Fixed box, matching line-height and tabular numerals. The digits are
+ * centred by the box rather than by grid, because MapLibre sizes and
+ * positions this element with its own inline styles and transforms; a layout
+ * that depends on the parent's box was what put the numbers outside their
+ * circles the first time. A twelve-result list always reaches double digits,
+ * so the even-width numerals are load-bearing rather than decorative.
+ */
 .locus-result-pin {
-  width: 26px; height: 26px; background: #fff; color: var(--ink);
-  border: 2px solid var(--accent); border-radius: 50%; font-size: 12px;
-  font-weight: 700; line-height: 22px; text-align: center;
-  font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px rgba(0,0,0,.3); cursor: pointer;
+  width: 26px;
+  height: 26px;
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
 }
-.locus-result-pin:focus-visible { outline: 3px solid rgba(180,70,44,.4); outline-offset: 2px; }
-.results { min-height: 12rem; }
-.status { margin: 0 0 .35rem; font-weight: 600; }
-.status--escalated, .status--short { color: var(--accent); }
-.status--error { color: #9b2226; }
-.status-detail { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
-.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
-.entry { position: relative; padding: .85rem 1rem .85rem 2.9rem; background: #fff; border: 1px solid var(--line); border-radius: .6rem; transition: border-color 150ms ease, box-shadow 150ms ease; }
-.entry-number { position: absolute; left: .75rem; top: .8rem; width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 50%; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; font-variant-numeric: tabular-nums; }
-.entry--active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,70,44,.18); }
-.entry-meta { margin: 0; font-size: .8rem; color: var(--muted); }
-.entry-title { margin: .25rem 0 .35rem; font-size: 1rem; }
-.blurb { margin: 0 0 .5rem; font-size: .9rem; color: var(--muted); }
-.badge { display: inline-block; padding: .05rem .4rem; border: 1px solid var(--line); border-radius: 999px; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
-.source { font-size: .8rem; }
-.retry { padding: .55rem .8rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
-.retry:disabled { border-color: var(--line); color: var(--muted); cursor: wait; }
-.attribution { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+
+.locus-result-pin:focus-visible {
+  outline: 3px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.results {
+  min-height: 12rem;
+}
+
+.status {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+/* The radius used, the escalation notice and the short-result notice all have
+   to stay visible: they are the honesty in the product, not chrome. */
+.status--escalated,
+.status--short {
+  color: var(--accent-ink);
+}
+
+.status--error {
+  color: var(--danger);
+}
+
+.status-detail {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.entry {
+  position: relative;
+  padding: 0.85rem 1rem 0.85rem 2.9rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.entry-number {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.8rem;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.entry-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.entry-title {
+  font-family: var(--font);
+  margin: 0.25rem 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.blurb {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.source {
+  font-size: 0.8rem;
+}
+
+.source a,
+.entry a {
+  color: var(--accent);
+}
+
+.retry {
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.4rem;
+  background: #fff;
+  color: var(--accent-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.retry:disabled {
+  border-color: var(--line);
+  color: var(--ink-soft);
+  cursor: wait;
+}
+
+/* Map and data credits. Below the results rather than over the map, so a
+   narrow screen cannot cover them -- they are a licence obligation. */
+.attribution {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.attribution a {
+  color: var(--accent);
+}

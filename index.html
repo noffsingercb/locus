@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Drop a pin and discover what happened near that place." />
+    <meta
+      name="description"
+      content="Drop a pin and discover the historical events closest to that place. No account, no tracking, and your coordinate is never stored."
+    />
     <!-- Origin only, never the path. A blanket no-referrer here got every OSM
          tile refused with 403: their usage policy requires an identifiable
          client, and an anonymous request cannot be one. Sending the origin
@@ -11,10 +14,35 @@
          coordinate goes in a POST body, and the request that carries it sets
          referrerPolicy: 'no-referrer' at its own call site in src/api.ts. -->
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <title>Locus</title>
+    <title>Locus — what happened near here?</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- Both stylesheets are served from public/ verbatim, which is what lets
+         the hand-written pages in public/why, public/how-it-works,
+         public/resources, public/faq and public/privacy share this palette and
+         this footer with the applet. src/style.css holds only app rules and is
+         injected by Vite after these, so it wins where the two overlap. -->
+    <link rel="stylesheet" href="/theme.css" />
+    <link rel="stylesheet" href="/site.css" />
   </head>
   <body>
     <main id="app"></main>
+    <!-- The written pages' footer, minus the "Locus App" link: this page IS
+         the app, and a link to the page you are already on is noise. The link
+         list is duplicated in each static page's markup; test/pages.test.ts is
+         what keeps the copies from disagreeing. -->
+    <footer class="site-footer site-footer--app">
+      <div class="inner">
+        <a href="/why">Why this exists</a>
+        <a href="/how-it-works">How this works</a>
+        <a href="/resources">Resources</a>
+        <a href="/faq">FAQ</a>
+        <a href="/privacy">Privacy</a>
+        <span class="spacer"></span>
+        <a class="who" href="https://www.linkedin.com/in/noffsingercb/" rel="noopener">
+          By Ben Noffsinger
+        </a>
+      </div>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

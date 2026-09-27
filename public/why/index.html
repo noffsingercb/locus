@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--
+			Origin only, never the path. A blanket no-referrer is what got every
+			map tile refused during v0.1 development, and the privacy cost of
+			sending an origin is nil: Locus never puts a coordinate in a URL.
+		-->
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
+		<title>Why this exists — Locus</title>
+		<meta name="description" content="Why Locus was built: the question you ask standing somewhere, and why a precise coordinate deserves more care than most sites give it." />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<!--
+			Absolute paths. These files are copied to the build root verbatim and
+			are never processed by Vite, so the path is ours to choose, and the
+			site is served from a domain root.
+		-->
+		<link rel="stylesheet" href="/theme.css" />
+		<link rel="stylesheet" href="/site.css" />
+	</head>
+	<body>
+		<header class="site-header">
+			<a class="wordmark" href="/">Locus</a>
+		</header>
+
+		<main class="prose">
+			<h1>Why this exists</h1>
+			<p class="lede">
+				Because "what happened right here?" is a question people ask while standing somewhere, and
+				almost nothing answers it.
+			</p>
+
+			<h2>The question</h2>
+			<p>
+				You are in an unfamiliar town, or at a trailhead, or looking at a street you have walked
+				past a hundred times. Something happened here. There is no obvious way to find out what.
+				A search engine wants a name for the thing you do not know the name of. An archive wants
+				you to already know which archive.
+			</p>
+			<p>
+				Locus takes the only thing you actually have — where you are — and answers with the
+				historical records closest to it.
+			</p>
+
+			<h2>The sibling</h2>
+			<p>
+				This is the second applet built over the same open dataset.
+				<a href="https://github.com/noffsingercb/circa" rel="noopener">Circa</a> locates you approximately in
+				time: give it a life and it shows the history that surrounded it. A <em>locus</em> is a
+				definite point in space, and that is the axis this one adds. Same history underneath, a
+				different question asked of it, and deliberately a separate app rather than a tab bolted
+				onto the first — the two have almost nothing in common but their data.
+			</p>
+			<p>
+				The dataset and the engine live in
+				<a href="https://github.com/noffsingercb/GeoHistory" rel="noopener">GeoHistory</a>, which
+				is open and answers to neither client in particular. Locus adds one narrow thing to it: a
+				map, and an opinion about what makes a good answer to a point.
+			</p>
+
+			<h2>Why the privacy stance is not boilerplate</h2>
+			<p>
+				A precise coordinate is more sensitive than most of what people worry about handing over.
+				It is where you are, right now, to within a few metres. Plenty of sites would collect that
+				casually, put it in a URL so it lands in server logs and referrer headers, and keep it
+				because storage is cheap.
+			</p>
+			<p>
+				Locus was built the other way around, and the constraint came first. There are no
+				accounts, no cookies, no analytics, no saved searches, and no coordinate in the address
+				bar. The pin exists in the page you are looking at and in one request body, and then it is
+				gone. <a href="/privacy">Privacy</a> states that as a list of specific things the code
+				does and does not do, which is the only version of such a claim worth reading.
+			</p>
+
+			<h2>Honest about the record</h2>
+			<p>
+				The history comes from Wikidata and Wikipedia, which are extraordinary and uneven. Dense
+				cities are rich. Small towns need a wider circle. Genuinely rural areas need a much wider
+				one, and what comes back is often a list of when nearby places were founded. Open ocean
+				returns nothing.
+			</p>
+			<p>
+				None of that is hidden behind a spinner or dressed up as a result. Locus says which radius
+				it used, says when it had to widen, and says plainly when there is little or nothing to
+				show. A tool that answers "what happened near here?" with silence, honestly, is more
+				useful than one that pads the list.
+			</p>
+			<p class="note">
+				Getting more local history into the record is the part that matters most, because it is
+				the part nobody else can tell you. That work happens upstream in GeoHistory rather than
+				here.
+			</p>
+
+			<h2>Who made it</h2>
+			<p>
+				Locus was designed and built by
+				<a href="https://www.linkedin.com/in/noffsingercb/" rel="noopener">Ben Noffsinger</a>,
+				along with GeoHistory and Circa. <a href="/resources">Resources</a> lists what it is made
+				of and what it is made from.
+			</p>
+		</main>
+
+		<footer class="site-footer">
+			<div class="inner">
+				<a href="/">Locus App</a>
+				<a href="/why">Why this exists</a>
+				<a href="/how-it-works">How this works</a>
+				<a href="/resources">Resources</a>
+				<a href="/faq">FAQ</a>
+				<a href="/privacy">Privacy</a>
+				<span class="spacer"></span>
+				<a class="who" href="https://www.linkedin.com/in/noffsingercb/" rel="noopener">
+					By Ben Noffsinger
+				</a>
+			</div>
+		</footer>
+	</body>
+</html>
