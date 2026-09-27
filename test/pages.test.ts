@@ -25,6 +25,14 @@ const APP_FOOTER_LINKS = [...PAGES]
 
 const LINKEDIN = 'https://www.linkedin.com/in/noffsingercb/'
 
+/*
+ * The sibling applet. It sits after the spacer rather than in the internal
+ * link list, which keeps that list at six destinations -- Circa's own footer
+ * carries a warning that a seventh link is the point at which a shared include
+ * should be built instead.
+ */
+const CIRCA = 'https://www.circatimeline.org'
+
 function pageFile(route: string): string {
   return join(PUBLIC_DIR, route.replace(/^\//, ''), 'index.html')
 }
@@ -67,10 +75,11 @@ describe('written pages', () => {
     expect(footerLinks(index)).toEqual(APP_FOOTER_LINKS)
   })
 
-  it('credits the author from every footer', () => {
+  it('credits the author and links the sibling applet from every footer', () => {
     const files = [readFileSync(join(ROOT, 'index.html'), 'utf8'), ...PAGES.map(readPage)]
     for (const html of files) {
       expect(html).toContain(LINKEDIN)
+      expect(html).toContain(CIRCA)
     }
   })
 
