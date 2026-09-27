@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Drop a pin and discover what happened near that place." />
+    <!-- Origin only, never the path. A blanket no-referrer here got every OSM
+         tile refused with 403: their usage policy requires an identifiable
+         client, and an anonymous request cannot be one. Sending the origin
+         costs no privacy, because no coordinate is ever in a URL -- the
+         coordinate goes in a POST body, and the request that carries it sets
+         referrerPolicy: 'no-referrer' at its own call site in src/api.ts. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>Locus</title>
   </head>
   <body>

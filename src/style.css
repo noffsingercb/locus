@@ -1,65 +1,43 @@
 :root {
-  font-family: Georgia, 'Times New Roman', serif;
-  color: #17221a;
-  background: #eef1e8;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  color-scheme: light;
+  --ink: #1b1b1f;
+  --muted: #5f6470;
+  --line: #dfe1e6;
+  --accent: #b4462c;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
-
-* {
-  box-sizing: border-box;
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: #fbfaf8; }
+#app { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.eyebrow { margin: 0; font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.masthead h1 { margin: .2rem 0 0; font-size: 2rem; }
+.lede { margin: .2rem 0 1.25rem; color: var(--muted); }
+.layout { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+@media (min-width: 60rem) { .layout { grid-template-columns: 1.15fr 1fr; align-items: start; } }
+.map { height: 60vh; min-height: 20rem; border: 1px solid var(--line); border-radius: .75rem; overflow: hidden; }
+.locus-pin { width: 20px; height: 20px; background: var(--accent); border: 3px solid #fff; border-radius: 50%; box-shadow: 0 1px 6px rgba(0,0,0,.35); cursor: grab; }
+.locus-pin:active { cursor: grabbing; }
+.locus-result-pin {
+  width: 26px; height: 26px; background: #fff; color: var(--ink);
+  border: 2px solid var(--accent); border-radius: 50%; font-size: 12px;
+  font-weight: 700; line-height: 22px; text-align: center;
+  font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px rgba(0,0,0,.3); cursor: pointer;
 }
-
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-}
-
-body,
-#app {
-  min-height: 100vh;
-}
-
-#app {
-  display: grid;
-  place-items: center;
-  padding: 2rem;
-}
-
-.shell {
-  width: min(42rem, 100%);
-  padding: clamp(2rem, 8vw, 5rem);
-  border: 1px solid #99a38e;
-  background: #f8f7f1;
-  box-shadow: 0 1rem 3rem rgb(28 44 32 / 12%);
-}
-
-.eyebrow {
-  margin: 0 0 1rem;
-  color: #53634f;
-  font-family: Arial, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(3rem, 12vw, 6rem);
-  font-weight: 400;
-  letter-spacing: -0.06em;
-  line-height: 0.9;
-}
-
-.lede {
-  margin: 1.5rem 0 2.5rem;
-  color: #365641;
-  font-size: clamp(1.35rem, 4vw, 2rem);
-}
-
-p:last-child {
-  margin-bottom: 0;
-  line-height: 1.6;
-}
+.locus-result-pin:focus-visible { outline: 3px solid rgba(180,70,44,.4); outline-offset: 2px; }
+.results { min-height: 12rem; }
+.status { margin: 0 0 .35rem; font-weight: 600; }
+.status--escalated, .status--short { color: var(--accent); }
+.status--error { color: #9b2226; }
+.status-detail { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
+.entries { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.entry { position: relative; padding: .85rem 1rem .85rem 2.9rem; background: #fff; border: 1px solid var(--line); border-radius: .6rem; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.entry-number { position: absolute; left: .75rem; top: .8rem; width: 26px; height: 26px; border: 2px solid var(--accent); border-radius: 50%; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+.entry--active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,70,44,.18); }
+.entry-meta { margin: 0; font-size: .8rem; color: var(--muted); }
+.entry-title { margin: .25rem 0 .35rem; font-size: 1rem; }
+.blurb { margin: 0 0 .5rem; font-size: .9rem; color: var(--muted); }
+.badge { display: inline-block; padding: .05rem .4rem; border: 1px solid var(--line); border-radius: 999px; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
+.source { font-size: .8rem; }
+.retry { padding: .55rem .8rem; border: 1px solid var(--accent); border-radius: .4rem; background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+.retry:disabled { border-color: var(--line); color: var(--muted); cursor: wait; }
+.attribution { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
