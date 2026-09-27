@@ -29,19 +29,24 @@
 	 * palette is deliberately a complement rather than a copy: Circa's warm
 	 * ribbon orange (#b25617) answered by a deep cartographic blue.
 	 *
+	 * These three are sampled from the logo rather than chosen alongside it,
+	 * so the mark and the interface cannot drift apart: --accent is the
+	 * emblem's dominant field, --accent-bright its highlight, --accent-ink
+	 * its deepest shadow.
+	 *
 	 * --accent is the only accent that ever carries white text or sits under
-	 * body copy; it measures about 6.4:1 on --paper, which passes AA for
-	 * normal-size text with room to spare. --accent-bright is decorative
+	 * body copy; it measures about 7.7:1 on --paper, which passes AA for
+	 * normal-size text and AAA for large. --accent-bright is decorative
 	 * only -- nothing legible goes on top of it. --accent-ink is for text on
 	 * an --accent-soft panel, where the accent itself is too close in value
 	 * to read comfortably. --accent-ring is the focus/active halo, kept as a
 	 * token so the app and the pages agree on it.
 	 */
-	--accent: #1b4f9c;
-	--accent-bright: #3f7fd1;
-	--accent-ink: #143a70;
+	--accent: #104d9d;
+	--accent-bright: #609eda;
+	--accent-ink: #002c7d;
 	--accent-soft: #e6eef9;
-	--accent-ring: rgba(27, 79, 156, 0.22);
+	--accent-ring: rgba(16, 77, 157, 0.22);
 
 	--danger: #9b2226;
 

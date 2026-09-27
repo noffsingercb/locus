@@ -33,6 +33,13 @@ const LINKEDIN = 'https://www.linkedin.com/in/noffsingercb/'
  */
 const CIRCA = 'https://www.circatimeline.org'
 
+/*
+ * Sampled from the logo artwork. Asserting the literal is the point: the
+ * palette is only "one file" for as long as nobody hand-edits a hex into a
+ * component, and this fails loudly if the token moves away from the mark.
+ */
+const ACCENT = '#104d9d'
+
 function pageFile(route: string): string {
   return join(PUBLIC_DIR, route.replace(/^\//, ''), 'index.html')
 }
@@ -121,10 +128,14 @@ describe('written pages', () => {
     expect(readPage('/why')).toContain('Open ocean')
   })
 
-  it('keeps the palette in one file', () => {
+  it('keeps the palette in one file, and on the logo', () => {
     const theme = readFileSync(join(PUBLIC_DIR, 'theme.css'), 'utf8')
     const app = readFileSync(join(ROOT, 'src', 'style.css'), 'utf8')
-    expect(theme).toContain('--accent: #1b4f9c')
+    const favicon = readFileSync(join(PUBLIC_DIR, 'favicon.svg'), 'utf8')
+    expect(theme).toContain(`--accent: ${ACCENT}`)
+    // The favicon is served from public/ and so cannot read a custom property
+    // from theme.css; its fill is a hand-kept copy and drifts silently.
+    expect(favicon).toContain(ACCENT)
     // The app stylesheet may use tokens but must not redefine them, or the
     // pages and the applet can drift apart on colour.
     expect(app).not.toContain('--accent:')
