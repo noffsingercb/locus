@@ -51,7 +51,40 @@ function directoryIndexRoutes(): Plugin {
 }
 
 const WORKER_FILE = 'maplibre-gl-worker.mjs'
-const WORKER_SOURCE = join('node_modules', 'maplibre-gl', 'dist', WORKER_FILE)
+const MAPLIBRE_DIST = join('node_modules', 'maplibre-gl', 'dist')
+
+/** Relative specifiers in an ES module, static or dynamic. */
+const RELATIVE_IMPORT = /(?:from|import)\s*\(?\s*['"]\.\/([^'"]+)['"]/g
+
+/**
+ * The worker and everything it pulls in, keyed by filename.
+ *
+ * The first version of this emitted only maplibre-gl-worker.mjs and the
+ * browser then 404'd on ./maplibre-gl-shared.mjs, which the worker imports.
+ * Walking the graph instead of naming files means an upstream reshuffle of
+ * dist/ produces a build error here rather than another dead map.
+ */
+function workerModuleGraph(): Map<string, Buffer> {
+	const collected = new Map<string, Buffer>()
+	const pending = [WORKER_FILE]
+
+	while (pending.length > 0) {
+		const name = pending.pop() as string
+		if (collected.has(name)) continue
+
+		const file = join(MAPLIBRE_DIST, name)
+		if (!existsSync(file)) throw new Error(`${file} is missing`)
+
+		const source = readFileSync(file)
+		collected.set(name, source)
+
+		for (const [, specifier] of source.toString('utf8').matchAll(RELATIVE_IMPORT)) {
+			pending.push(specifier)
+		}
+	}
+
+	return collected
+}
 
 /**
  * Put MapLibre's worker where MapLibre will look for it.
@@ -76,8 +109,10 @@ const WORKER_SOURCE = join('node_modules', 'maplibre-gl', 'dist', WORKER_FILE)
  * built bundle -- which is to say, in production.
  *
  * There is no supported override; v6 exposes no `workerUrl` or `workerClass`.
- * So emit the file under its exact expected name, next to the entry chunk.
- * It cannot be hashed, because the name is hard-coded upstream.
+ * So emit the worker under its exact expected name, next to the entry chunk,
+ * along with every module it imports -- it is not self-contained; it pulls in
+ * `./maplibre-gl-shared.mjs`. None of them can be hashed, because the names
+ * are resolved relative to each other at runtime.
  */
 function maplibreWorkerAsset(): Plugin {
 	let assetsDir = 'assets'
@@ -89,11 +124,15 @@ function maplibreWorkerAsset(): Plugin {
 			assetsDir = config.build.assetsDir
 		},
 		generateBundle(_options, bundle) {
-			if (!existsSync(WORKER_SOURCE)) {
+			let modules: Map<string, Buffer>
+			try {
+				modules = workerModuleGraph()
+			} catch (error) {
 				// Fail the build rather than ship a map that silently draws nothing.
 				this.error(
-					`${WORKER_SOURCE} is missing. MapLibre's worker must be emitted beside the ` +
-						`entry chunk or the built map renders no tiles. Has maplibre-gl moved its dist layout?`,
+					`${(error as Error).message}. MapLibre's worker and its imports must be emitted ` +
+						`beside the entry chunk or the built map renders no tiles. ` +
+						`Has maplibre-gl changed its dist layout?`,
 				)
 				return
 			}
@@ -103,11 +142,13 @@ function maplibreWorkerAsset(): Plugin {
 			const entry = Object.values(bundle).find((item) => item.type === 'chunk' && item.isEntry)
 			const directory = entry === undefined ? assetsDir : posix.dirname(entry.fileName)
 
-			this.emitFile({
-				type: 'asset',
-				fileName: directory === '.' ? WORKER_FILE : posix.join(directory, WORKER_FILE),
-				source: readFileSync(WORKER_SOURCE),
-			})
+			for (const [name, source] of modules) {
+				this.emitFile({
+					type: 'asset',
+					fileName: directory === '.' ? name : posix.join(directory, name),
+					source,
+				})
+			}
 		},
 	}
 }
