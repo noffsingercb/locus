@@ -13,6 +13,33 @@
 		<meta name="description" content="Why Locus was built: the question you ask standing somewhere, and why a precise coordinate deserves more care than most sites give it." />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<!--
+			The .ico covers the 16/32/48 sizes browsers still ask for by name and
+			the surfaces that ignore SVG entirely. Both it and favicon.svg carry
+			the drawn pin rather than the emblem: the logo has a castle, a temple,
+			a factory and a plaza in it, and at 16px that resolves to grey mush.
+			Everything 128px and up uses the real artwork.
+		-->
+		<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="theme-color" content="#104d9d" />
+		<link rel="canonical" href="https://www.locustimeline.org/why" />
+		<!--
+			Absolute og:url and og:image, because scrapers do not resolve relative
+			URLs. www is canonical and the apex redirects to it, so naming the
+			apex here would cost every crawler a redirect hop.
+		-->
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Locus" />
+		<meta property="og:url" content="https://www.locustimeline.org/why" />
+		<meta property="og:title" content="Why this exists — Locus" />
+		<meta property="og:description" content="Why Locus was built: the question you ask standing somewhere, and why a precise coordinate deserves more care than most sites give it." />
+		<meta property="og:image" content="https://www.locustimeline.org/og-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="The Locus mark beside the word Locus and the question: what happened near here?" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<!--
 			Absolute paths. These files are copied to the build root verbatim and
 			are never processed by Vite, so the path is ours to choose, and the
 			site is served from a domain root.
@@ -22,7 +49,7 @@
 	</head>
 	<body>
 		<header class="site-header">
-			<a class="wordmark" href="/">Locus</a>
+			<a class="wordmark" href="/"><img src="/locus-mark-128.png" alt="" width="28" height="28" />Locus</a>
 		</header>
 
 		<main class="prose">

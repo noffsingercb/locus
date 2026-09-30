@@ -7,8 +7,9 @@ import { describe, expect, it } from 'vitest'
  * nothing in the build checks them. Circa's footer carries a warning that its
  * link list is duplicated in six places and that a page shipped once without
  * being added to the app's copy. These tests are that warning made executable:
- * the link lists must agree, every destination must exist, and every page must
- * carry the shared stylesheets and the privacy-relevant meta.
+ * the link lists must agree, every destination and every referenced asset must
+ * exist, and every page must carry the shared stylesheets and the
+ * privacy-relevant meta.
  */
 
 const ROOT = process.cwd()
@@ -40,12 +41,27 @@ const CIRCA = 'https://www.circatimeline.org'
  */
 const ACCENT = '#104d9d'
 
+/*
+ * www is canonical; the apex redirects to it. Both the canonical link and the
+ * og: tags have to name the same host, or a crawler is told one thing and a
+ * scraper another.
+ */
+const SITE = 'https://www.locustimeline.org'
+
 function pageFile(route: string): string {
   return join(PUBLIC_DIR, route.replace(/^\//, ''), 'index.html')
 }
 
 function readPage(route: string): string {
   return readFileSync(pageFile(route), 'utf8')
+}
+
+/** Every document, applet first. */
+function allDocuments(): { name: string; html: string }[] {
+  return [
+    { name: '/', html: readFileSync(join(ROOT, 'index.html'), 'utf8') },
+    ...PAGES.map((route) => ({ name: route, html: readPage(route) })),
+  ]
 }
 
 /** Internal hrefs inside the site footer, in document order. */
@@ -83,8 +99,7 @@ describe('written pages', () => {
   })
 
   it('credits the author and links the sibling applet from every footer', () => {
-    const files = [readFileSync(join(ROOT, 'index.html'), 'utf8'), ...PAGES.map(readPage)]
-    for (const html of files) {
+    for (const { html } of allDocuments()) {
       expect(html).toContain(LINKEDIN)
       expect(html).toContain(CIRCA)
     }
@@ -99,7 +114,6 @@ describe('written pages', () => {
         `${route}: true`,
       )
       expect(`${route}: ${html.includes('name="viewport"')}`).toBe(`${route}: true`)
-      expect(`${route}: ${html.includes('href="/favicon.svg"')}`).toBe(`${route}: true`)
       expect(`${route}: ${(html.match(/<h1>/g) ?? []).length}`).toBe(`${route}: 1`)
     }
   })
@@ -136,9 +150,87 @@ describe('written pages', () => {
     // The favicon is served from public/ and so cannot read a custom property
     // from theme.css; its fill is a hand-kept copy and drifts silently.
     expect(favicon).toContain(ACCENT)
+    // theme-color is a third hand-kept copy of the same value, in six heads.
+    for (const { name, html } of allDocuments()) {
+      expect(`${name}: ${html.includes(`<meta name="theme-color" content="${ACCENT}" />`)}`).toBe(
+        `${name}: true`,
+      )
+    }
     // The app stylesheet may use tokens but must not redefine them, or the
     // pages and the applet can drift apart on colour.
     expect(app).not.toContain('--accent:')
     expect(app).not.toContain(':root')
+  })
+
+  it('carries the icon set and the installable manifest on every document', () => {
+    for (const { name, html } of allDocuments()) {
+      for (const tag of [
+        'rel="icon" href="/favicon.svg"',
+        'rel="icon" href="/favicon.ico"',
+        'rel="apple-touch-icon" href="/apple-touch-icon.png"',
+        'rel="manifest" href="/site.webmanifest"',
+      ]) {
+        expect(`${name}: ${tag}: ${html.includes(tag)}`).toBe(`${name}: ${tag}: true`)
+      }
+    }
+  })
+
+  it('declares a canonical URL and an og: card that agree on the host', () => {
+    const expected: Record<string, string> = { '/': `${SITE}/` }
+    for (const route of PAGES) expected[route] = `${SITE}${route}`
+
+    for (const { name, html } of allDocuments()) {
+      const canonical = /<link rel="canonical" href="([^"]+)" \/>/.exec(html)?.[1]
+      const ogUrl = /<meta property="og:url" content="([^"]+)" \/>/.exec(html)?.[1]
+      expect(`${name} canonical: ${canonical}`).toBe(`${name} canonical: ${expected[name]}`)
+      // A canonical that disagrees with og:url tells a crawler one thing and a
+      // scraper another, which is worse than omitting both.
+      expect(`${name} og:url: ${ogUrl}`).toBe(`${name} og:url: ${expected[name]}`)
+      expect(`${name}: ${html.includes(`content="${SITE}/og-card.png"`)}`).toBe(`${name}: true`)
+      expect(`${name}: ${html.includes('name="twitter:card"')}`).toBe(`${name}: true`)
+      // og:title and og:description must exist rather than be inherited: a
+      // scraper that finds neither falls back to whatever text it likes.
+      expect(`${name}: ${/property="og:title" content="[^"]+"/.test(html)}`).toBe(`${name}: true`)
+      expect(`${name}: ${/property="og:description" content="[^"]{40,}"/.test(html)}`).toBe(
+        `${name}: true`,
+      )
+    }
+  })
+
+  it('references no icon, image or manifest that is missing from public/', () => {
+    const manifest = JSON.parse(readFileSync(join(PUBLIC_DIR, 'site.webmanifest'), 'utf8'))
+    const referenced = new Set<string>(
+      (manifest.icons as { src: string }[]).map((icon) => icon.src),
+    )
+
+    for (const { html } of allDocuments()) {
+      // Root-relative assets in a link/meta, plus absolute og: image URLs on
+      // our own host, reduced to the path they resolve to inside public/.
+      for (const [, path] of html.matchAll(/(?:href|src|content)="(\/[\w./-]+\.(?:png|ico|svg|webmanifest))"/g)) {
+        referenced.add(path)
+      }
+      for (const [, path] of html.matchAll(
+        new RegExp(`content="${SITE}(/[\\w./-]+\\.(?:png|ico|svg))"`, 'g'),
+      )) {
+        referenced.add(path)
+      }
+    }
+
+    // This is the gate that catches an icon set that was generated but never
+    // committed: the tags ship, the files 404, and nothing else notices.
+    for (const path of [...referenced].sort()) {
+      expect(`${path}: ${existsSync(join(PUBLIC_DIR, path.replace(/^\//, '')))}`).toBe(
+        `${path}: true`,
+      )
+    }
+    expect(referenced.size).toBeGreaterThan(8)
+  })
+
+  it('serves the mark in the wordmark of every written page', () => {
+    for (const route of PAGES) {
+      expect(`${route}: ${readPage(route).includes('<img src="/locus-mark-128.png" alt=""')}`).toBe(
+        `${route}: true`,
+      )
+    }
   })
 })
