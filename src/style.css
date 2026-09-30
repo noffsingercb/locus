@@ -18,9 +18,35 @@
   padding: 1.5rem 1rem 3rem;
 }
 
+/*
+ * The mark is a plain <img> from public/ rather than an import, for the same
+ * reason theme.css lives there: the written pages reference it at a stable
+ * path and the applet must show the identical file, not a fingerprinted
+ * duplicate of it. It is decorative -- the wordmark beside it is the text --
+ * so alt is empty and a screen reader skips straight to the h1.
+ */
 .masthead {
   display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+}
+
+.masthead-mark {
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.masthead-text {
+  display: flex;
   flex-direction: column;
+}
+
+/* The stack already owns the gap below the masthead, so the lede must not add
+   a second one inside it. */
+.masthead .lede {
+  margin-bottom: 0;
 }
 
 .eyebrow {

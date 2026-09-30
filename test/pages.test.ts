@@ -226,11 +226,16 @@ describe('written pages', () => {
     expect(referenced.size).toBeGreaterThan(8)
   })
 
-  it('serves the mark in the wordmark of every written page', () => {
+  it('serves the mark in the wordmark of every written page and in the applet', () => {
     for (const route of PAGES) {
       expect(`${route}: ${readPage(route).includes('<img src="/locus-mark-128.png" alt=""')}`).toBe(
         `${route}: true`,
       )
     }
+    // The applet's header is built in JS, so it is invisible to the HTML
+    // scans above -- which is exactly how it shipped without the mark once.
+    const main = readFileSync(join(ROOT, 'src', 'main.ts'), 'utf8')
+    expect(main).toContain('src="/locus-mark-128.png"')
+    expect(existsSync(join(PUBLIC_DIR, 'locus-mark-128.png'))).toBe(true)
   })
 })
