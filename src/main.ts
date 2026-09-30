@@ -13,9 +13,12 @@ if (!app) throw new Error('Locus application root is missing')
 
 app.innerHTML = `
   <header class="masthead">
-    <p class="eyebrow">GeoHistory applet</p>
-    <h1>Locus</h1>
-    <p class="lede">What happened near here?</p>
+    <img class="masthead-mark" src="/locus-mark-128.png" alt="" width="128" height="128" />
+    <div class="masthead-text">
+      <p class="eyebrow">GeoHistory applet</p>
+      <h1>Locus</h1>
+      <p class="lede">What happened near here?</p>
+    </div>
   </header>
   <div class="layout">
     <div id="map" class="map" role="application" aria-label="Map. Click to place a pin."></div>

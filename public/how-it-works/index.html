@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--
+			Origin only, never the path. A blanket no-referrer is what got every
+			map tile refused during v0.1 development, and the privacy cost of
+			sending an origin is nil: Locus never puts a coordinate in a URL.
+		-->
+		<meta name="referrer" content="strict-origin-when-cross-origin" />
+		<title>How this works — Locus</title>
+		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<!--
+			The .ico covers the 16/32/48 sizes browsers still ask for by name and
+			the surfaces that ignore SVG entirely. Both it and favicon.svg carry
+			the drawn pin rather than the emblem: the logo has a castle, a temple,
+			a factory and a plaza in it, and at 16px that resolves to grey mush.
+			Everything 128px and up uses the real artwork.
+		-->
+		<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="theme-color" content="#104d9d" />
+		<link rel="canonical" href="https://www.locustimeline.org/how-it-works" />
+		<!--
+			Absolute og:url and og:image, because scrapers do not resolve relative
+			URLs. www is canonical and the apex redirects to it, so naming the
+			apex here would cost every crawler a redirect hop.
+		-->
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Locus" />
+		<meta property="og:url" content="https://www.locustimeline.org/how-it-works" />
+		<meta property="og:title" content="How this works — Locus" />
+		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<meta property="og:image" content="https://www.locustimeline.org/og-card.png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="The Locus mark beside the word Locus and the question: what happened near here?" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<!--
+			Absolute paths. These files are copied to the build root verbatim and
+			are never processed by Vite, so the path is ours to choose, and the
+			site is served from a domain root.
+		-->
+		<link rel="stylesheet" href="/theme.css" />
+		<link rel="stylesheet" href="/site.css" />
+	</head>
+	<body>
+		<header class="site-header">
+			<a class="wordmark" href="/"><img src="/locus-mark-128.png" alt="" width="28" height="28" />Locus</a>
+		</header>
+
+		<main class="prose">
+			<h1>How this works</h1>
+			<p class="lede">
+				Locus takes one point on a map and shows you the historical records closest to it. Here is
+				what that actually means.
+			</p>
+
+			<h2>What you give it</h2>
+			<p>
+				A pin. Click the map, or drag the pin you already placed. That is the whole input — no
+				name, no date, no account, nothing to fill in. Locus does not ask your browser for your
+				location and cannot: the page ships a policy that refuses the browser location API
+				outright.
+			</p>
+
+			<h2>What it does with it</h2>
+			<p>
+				The coordinate goes to <a href="https://github.com/noffsingercb/GeoHistory" rel="noopener">GeoHistory</a>,
+				the open dataset and read-only API underneath Locus, as a single request asking one narrow
+				question: which events in the record are physically nearest to this point. GeoHistory owns
+				the history and the distance maths. Locus owns the map, the search policy, and everything
+				you read on the page.
+			</p>
+			<p>
+				The coordinate travels in the body of that request rather than in the address, which is
+				why you will never see it in the URL bar, in your history, or in a shared link. That is a
+				deliberate design decision and the <a href="/privacy">Privacy</a> page explains what it
+				buys you.
+			</p>
+
+			<h2>The radius ladder</h2>
+			<p>
+				Locus asks for a tight circle first and widens only if it has to, stopping at the first
+				radius that can fill a list of twelve.
+			</p>
+			<table>
+				<thead>
+					<tr>
+						<th scope="col">Rung</th>
+						<th scope="col">What it is for</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>5&nbsp;km</td>
+						<td>A dense city centre. Where the record is thick, this is the whole search.</td>
+					</tr>
+					<tr>
+						<td>15&nbsp;km</td>
+						<td>A metro area and its immediate surroundings.</td>
+					</tr>
+					<tr>
+						<td>50&nbsp;km</td>
+						<td>A small town's region. Most towns need this rung, and that is normal.</td>
+					</tr>
+					<tr>
+						<td>150&nbsp;km</td>
+						<td>Genuinely rural country. The last rung; Locus does not widen past it.</td>
+					</tr>
+				</tbody>
+			</table>
+			<p>
+				The radius actually used is always stated above the list, and when Locus had to widen it
+				says so in plain words rather than quietly pretending the first circle worked. If the last
+				rung still finds fewer than twelve records, you get the few that exist and a sentence
+				saying how few. If it finds none, you get told where it looked.
+			</p>
+			<p class="note">
+				The ladder lives in Locus, not in GeoHistory. The API takes one radius per call and
+				answers honestly; walking the rungs is a product decision, and it belongs on this side of
+				the line so a second client can make a different one.
+			</p>
+
+			<h2>Chosen by distance, read by date</h2>
+			<p>
+				This is the part that is easy to get backwards. The twelve records are
+				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first. So the
+				list you read is a small chronology of one place, not a ranking — record five may well sit
+				closer to your pin than record one.
+			</p>
+			<p>
+				The numbers on the map markers follow the reading order for exactly that reason. They are
+				positions in a list, not a relevance rank, because proximity order would imply the engine
+				computed an importance it never computed. Click a marker to jump to its card.
+			</p>
+
+			<h3>Ties never wobble</h3>
+			<p>
+				Two calls with the same pin return the same records in the same order, for a given build
+				of the dataset. Equal distance is broken by date, and an equal date by the record's own
+				identifier. Nothing is sampled and nothing is random.
+			</p>
+
+			<h2>What is left out, and why</h2>
+			<h3>Births and deaths</h3>
+			<p>
+				By default Locus asks GeoHistory to exclude them. Measured against the dataset, 85–94% of
+				the records nearest a dense city centre are births and deaths of minor figures; a list of
+				the twelve closest records without that filter answers "who was born or died here?"
+				instead of "what happened here?" The people are in the record and a later view may surface
+				them deliberately. They are not allowed to crowd out the answer you came for.
+			</p>
+			<h3>Events that were not about a place</h3>
+			<p>
+				A handful of records in GeoHistory are marked as reaching everyone alive rather than
+				anywhere in particular. Circa shows those on purpose, because a timeline of a life should
+				carry them. In a distance-first list they are noise — an event with no meaningful location
+				cannot be near you — so Locus leaves them out.
+			</p>
+			<h3>Records pinned to a country's centre</h3>
+			<p>
+				Some events are placed by a fallback claim rather than their own coordinate, which can put
+				a national treaty three kilometres from your pin because that is where the country's
+				centre happens to sit. Locus asks for directly-placed records only. On the current dataset
+				build that filter turns out to change very little, which is worth saying plainly rather
+				than implying it is doing heavy lifting.
+			</p>
+
+			<h2>Why a card sometimes carries only a year</h2>
+			<p>
+				Locus keeps whatever precision the record actually holds instead of filling in the rest. A
+				card reading 1859 means the year is known and the day is not. It is a smaller claim, made
+				honestly, and it is a better answer than a confident date nobody can support.
+			</p>
+
+			<h2>Every card links to its source</h2>
+			<p>
+				The event data is reused under CC BY-SA, so attribution is not decoration. Locus fails
+				closed on it: if a response arrives containing a record with no usable source link, the
+				whole response is rejected rather than rendered without credit. You will never see an
+				unattributed record here, because the code will not draw one.
+			</p>
+
+			<h2>What it is not</h2>
+			<p>
+				Locus is not a local-history archive and it is not a search engine. It reports what one
+				open dataset happens to hold near a point. The record is broad rather than complete, and
+				it thins out the further back you go and the further you get from large cities.
+			</p>
+			<p class="note">
+				Two honest failure modes worth knowing about. Out at the wide rungs, results can come back
+				almost entirely as town and municipality foundings, because that is what the record holds
+				at that scale. And open ocean returns nothing at all — correctly, which is why the empty
+				state says where it looked instead of claiming something broke.
+			</p>
+			<p><a href="/faq">More questions</a> · <a href="/resources">Where the data comes from</a></p>
+		</main>
+
+		<footer class="site-footer">
+			<div class="inner">
+				<a href="/">Locus App</a>
+				<a href="/why">Why this exists</a>
+				<a href="/how-it-works">How this works</a>
+				<a href="/resources">Resources</a>
+				<a href="/faq">FAQ</a>
+				<a href="/privacy">Privacy</a>
+				<span class="spacer"></span>
+				<a class="sibling" href="https://www.circatimeline.org" rel="noopener">Circa ↗</a>
+				<a class="who" href="https://www.linkedin.com/in/noffsingercb/" rel="noopener">
+					By Ben Noffsinger
+				</a>
+			</div>
+		</footer>
+	</body>
+</html>

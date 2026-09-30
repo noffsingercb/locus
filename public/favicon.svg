@@ -1,0 +1,15 @@
+<!--
+  Placeholder mark: a pin in the Locus accent, drawn rather than exported, so
+  the pages have a favicon that is not a 404 before the real logo lands.
+  Replace this file (and add the PNG icon sizes beside it) when the artwork is
+  ready; nothing links to it by name except a <link rel="icon"> in each page.
+  The fill tracks --accent in theme.css by hand -- an SVG served from public/
+  cannot read a custom property from a stylesheet it is not embedded in.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Locus">
+  <path
+    d="M16 2.5c-5.1 0-9.3 4.1-9.3 9.2 0 6.6 8.2 16.4 8.6 16.8a1 1 0 0 0 1.5 0c.3-.4 8.5-10.2 8.5-16.8 0-5.1-4.2-9.2-9.3-9.2z"
+    fill="#104d9d"
+  />
+  <circle cx="16" cy="11.7" r="3.4" fill="#f7f9fc" />
+</svg>
