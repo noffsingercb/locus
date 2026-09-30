@@ -63,6 +63,19 @@ export default defineConfig({
 	optimizeDeps: {
 		exclude: ['maplibre-gl'],
 	},
+	/*
+	 * MapLibre v5 and later ship an ES-module worker and construct it with
+	 * { type: 'module' }. Vite's default worker.format is 'iife', so the chunk
+	 * it emits and the type MapLibre asks for disagree, and the browser reports
+	 * "Worker failed to load" -- a styled, interactive, completely empty map,
+	 * because tile decoding is the only thing the worker does.
+	 *
+	 * Unlike optimizeDeps.exclude above, which is a dev-only workaround, this
+	 * one changes the build output.
+	 */
+	worker: {
+		format: 'es',
+	},
 	build: {
 		outDir: 'dist',
 	},
