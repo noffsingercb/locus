@@ -16,10 +16,12 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
+      # .node-version is the single source of truth: this step and the
+      # Cloudflare Pages build both read it.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .node-version
           cache: npm
       - name: Install
         run: npm install
