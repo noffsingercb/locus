@@ -36,11 +36,11 @@ export function domIdForResult(number: number): string {
  * The API contract requires lat and lng on every entry, so this guard should
  * never fire. It exists because a silent mismatch here would be invisible.
  */
-export function numberResults(entries: readonly NearbyEntry[]): NumberedResult[] {
+export function numberResults(entries: readonly NearbyEntry[], offset = 0): NumberedResult[] {
   const plotted: NumberedResult[] = []
 
   entries.forEach((entry, index) => {
-    const number = index + 1
+    const number = offset + index + 1
     if (!Number.isFinite(entry.lat) || !Number.isFinite(entry.lng)) return
     plotted.push({
       number,

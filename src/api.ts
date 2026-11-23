@@ -40,6 +40,7 @@ export interface NearbyResponse {
   coordinateMode: string
   significanceFloor: number
   totalWithinRadius: number
+  offset: number
   returned: number
   entries: NearbyEntry[]
 }
@@ -64,6 +65,7 @@ export function buildNearbyRequest(
   point: Point,
   radiusKm: number,
   baseUrl: string = API_BASE_URL,
+  offset = 0,
 ): { url: string; body: string } {
   return {
     url: `${baseUrl}/v1/nearby`,
@@ -72,6 +74,7 @@ export function buildNearbyRequest(
       lng: point.lng,
       radiusKm,
       limit: TARGET_RESULTS,
+      offset,
       significanceFloor: SIGNIFICANCE_FLOOR,
       coordinateMode: 'direct',
       excludeCategories: [...EXCLUDED_CATEGORIES],
@@ -124,6 +127,7 @@ function isNearbyResponse(value: unknown): value is NearbyResponse {
   if (!nullableString(payload.datasetBuild)) return false
   if (typeof payload.engine !== 'string') return false
   if (typeof payload.radiusKm !== 'number') return false
+  if (typeof payload.offset !== 'number' || !Number.isInteger(payload.offset) || payload.offset < 0) return false
   if (typeof payload.returned !== 'number' || !Number.isInteger(payload.returned)) return false
   if (typeof payload.totalWithinRadius !== 'number' || !Number.isInteger(payload.totalWithinRadius)) return false
   if (!Array.isArray(payload.entries) || !payload.entries.every(isEntry)) return false
@@ -153,6 +157,7 @@ export interface FetchNearbyOptions {
   signal?: AbortSignal
   fetchImpl?: typeof fetch
   baseUrl?: string
+  offset?: number
 }
 
 export async function fetchNearby(
@@ -161,7 +166,7 @@ export async function fetchNearby(
   options: FetchNearbyOptions = {},
 ): Promise<NearbyResponse> {
   const doFetch = options.fetchImpl ?? globalThis.fetch
-  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL)
+  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL, options.offset ?? 0)
 
   let response: Response
   try {
@@ -199,6 +204,6 @@ export async function fetchNearby(
   } catch {
     throw new NearbyError({ kind: 'malformed' })
   }
-  if (!isNearbyResponse(payload)) throw new NearbyError({ kind: 'malformed' })
+  if (!isNearbyResponse(payload) || payload.offset !== (options.offset ?? 0) || payload.returned > TARGET_RESULTS || payload.offset + payload.returned > payload.totalWithinRadius) throw new NearbyError({ kind: 'malformed' })
   return payload
 }

@@ -83,20 +83,19 @@
 			</p>
 
 			<h2>Choose a radius</h2>
-			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus asks GeoHistory for up to 100 matching records; if more match, the list states how many were found and shows the closest 100.</p>
+			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus displays 25 records per page, with the next closest matches on each page. The list reports the total matching records.</p>
 			<p class="note">The search radius and filters are Locus product choices. GeoHistory answers one bounded request at a time.</p>
 
 			<h2>Chosen by distance, read by date</h2>
 			<p>
 				This is the part that is easy to get backwards. The returned records are
-				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first. So the
-				list you read is a small chronology of one place, not a ranking — record five may well sit
+				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first within each page. Pages are not globally chronological. So each page is a small chronology, not a ranking — record five may well sit
 				closer to your pin than record one.
 			</p>
 			<p>
 				The numbers on the map markers follow the reading order for exactly that reason. They are
 				positions in a list, not a relevance rank, because proximity order would imply the engine
-				computed an importance it never computed. Click a marker to jump to its card.
+				computed an importance it never computed. Click a marker to jump to its card, or click a result number to zoom to its marker.
 			</p>
 
 			<h3>Ties never wobble</h3>

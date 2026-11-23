@@ -191,7 +191,15 @@
   line-height: 22px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  padding: 0;
+  background: white;
+  color: var(--accent);
+  cursor: pointer;
 }
+.entry-number:focus-visible, .pagination button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; }
+.pagination button { cursor: pointer; padding: 0.5rem 0.8rem; }
+.pagination button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .entry--active {
   border-color: var(--accent);

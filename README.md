@@ -6,7 +6,7 @@ Locus is a standalone, privacy-first client of the public [GeoHistory](https://g
 
 ## How it works
 
-A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 to 200 km; Locus requests up to 100 matching records. GeoHistory selects by distance and returns that set in date order; Locus preserves the order and reports when more matches exist. Births and deaths are excluded by client policy. Wide-radius results can still be founding-heavy; that is a corpus limitation, not a hidden ranking claim.
+A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 to 200 km; Locus requests 25 matching records per page. GeoHistory selects each page by distance and returns it in date order; pages are not globally chronological. The list number focuses its map marker. Births and deaths are excluded by client policy. Wide-radius results can still be founding-heavy; that is a corpus limitation, not a hidden ranking claim.
 
 ## Privacy
 

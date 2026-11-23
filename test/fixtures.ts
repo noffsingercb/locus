@@ -46,6 +46,7 @@ export function makeResponse(
     coordinateMode: 'direct',
     significanceFloor: 0.05,
     totalWithinRadius: entries.length,
+    offset: 0,
     returned: entries.length,
     entries,
     ...overrides,

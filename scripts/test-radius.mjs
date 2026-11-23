@@ -27,26 +27,60 @@ try {
   })
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   const requests = []
+  let build = 'test'
   await page.route('https://tiles.example.test/**', route => route.fulfill({ json: { version: 8, sources: {}, layers: [] }, headers: { 'access-control-allow-origin': '*' } }))
   await page.route('https://api.example.test/v1/nearby', async route => {
     const request = route.request()
     const body = request.postDataJSON()
     requests.push({ method: request.method(), url: request.url(), body })
-    const count = body.radiusKm === 200 ? 100 : 1
-    const entries = Array.from({ length: count }, (_, i) => ({ id: `Q${i}`, title: `Record ${i}`, displayTitle: null, blurb: null, dateStart: '1900-01-01', dateEnd: null, datePrecision: 'day', category: 'event', scope: 'local', significance: 0.5, notability: 0.5, coordSource: 'P625', lat: 39.7392, lng: -104.9903, distanceKm: i / 10, sourceUrl: `https://example.org/${i}` }))
-    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: 'test', engine: 'test', radiusKm: body.radiusKm, coordinateMode: 'direct', significanceFloor: 0.05, totalWithinRadius: body.radiusKm === 200 ? 149 : count, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
+    const total = body.radiusKm === 200 ? 149 : 1
+    const offset = body.offset
+    const count = Math.min(body.limit, total - offset)
+    const entries = Array.from({ length: count }, (_, n) => { const i = offset + n; return ({ id: `Q${i}`, title: `Record ${i}`, displayTitle: null, blurb: null, dateStart: '1900-01-01', dateEnd: null, datePrecision: 'day', category: 'event', scope: 'local', significance: 0.5, notability: 0.5, coordSource: 'P625', lat: 39.7392 + i / 10000, lng: -104.9903 + i / 10000, distanceKm: i / 10, sourceUrl: `https://example.org/${i}` }) })
+    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: build, engine: 'test', radiusKm: body.radiusKm, coordinateMode: 'direct', significanceFloor: 0.05, totalWithinRadius: total, offset, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
   })
   await page.goto(`http://127.0.0.1:${port}/`)
   await page.waitForSelector('.maplibregl-canvas')
   await page.locator('.maplibregl-canvas').click({ position: { x: 250, y: 220 } })
-  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 1 matching'))
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 1–1 of 1'))
   await page.locator('#radius').fill('200')
-  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('100 closest of 149'))
-  assert.equal(await page.locator('.entry').count(), 100)
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 1–25 of 149'))
+  assert.equal(await page.locator('.entry').count(), 25)
   assert.equal(await page.locator('#radius-value').textContent(), '200 km')
-  assert.deepEqual(requests.map(r => [r.method, r.body.radiusKm, r.body.limit]), [['POST', 15, 100], ['POST', 200, 100]])
+  await page.getByRole('button', { name: 'Next', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 26–50 of 149'))
+  assert.equal(await page.locator('.entry').count(), 25)
+  const countBefore = requests.length
+  await page.getByRole('button', { name: 'Show Record 25 on the map' }).click()
+  await page.waitForTimeout(2200)
+  const pin = await page.locator('.locus-result-pin').filter({hasText: '26'}).boundingBox()
+  const map = await page.locator('#map').boundingBox()
+  assert.ok(pin && map && Math.abs((pin.x + pin.width/2) - (map.x + map.width/2)) < 12 && Math.abs((pin.y + pin.height/2) - (map.y + map.height/2)) < 12, 'selected result centered on map')
+  assert.equal(requests.length, countBefore, 'map focus must not trigger a new search')
+  const nextMarker = page.getByRole('button', { name: 'Show Record 26 on the map' })
+  await nextMarker.focus()
+  await page.keyboard.press('Enter')
+  await page.waitForTimeout(2200)
+  const keyboardPin = await page.locator('.locus-result-pin').filter({hasText: '27'}).boundingBox()
+  assert.ok(keyboardPin && Math.abs((keyboardPin.x + keyboardPin.width/2) - (map.x + map.width/2)) < 12, 'keyboard centers marker')
+  for (let i = 2; i < 6; i++) {
+    await page.getByRole('button', { name: 'Next', exact: true }).click()
+    await page.waitForFunction(n => document.querySelector('.pagination')?.textContent?.includes(`Page ${n}`), i + 1)
+  }
+  assert.equal(await page.locator('.entry').count(), 24)
+  assert.equal(await page.getByRole('button', {name: 'Next', exact: true}).isDisabled(), true)
+  for (let i = 6; i > 1; i--) {
+    await page.getByRole('button', { name: 'Previous', exact: true }).click()
+    await page.waitForFunction(n => document.querySelector('.pagination')?.textContent?.includes(`Page ${n}`), i - 1)
+  }
+  build = 'changed'
+  await page.getByRole('button', { name: 'Next', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('dataset changed'))
+  assert.equal(await page.locator('.entry').count(), 0)
+  assert.deepEqual(requests.map(r => r.body.offset), [0, 0, 25, 50, 75, 100, 125, 100, 75, 50, 25, 0, 25])
+  assert.ok(requests.every(r => r.method === 'POST' && r.body.limit === 25))
   assert.ok(requests.every(r => !r.url.includes('?')))
-  console.log('Radius browser test passed: POST-only coordinates, slider, 100 cards and capped-count disclosure.')
+  console.log('Browser test passed: paging, focus without a search, privacy, dataset-change guard.')
 } finally {
   await browser?.close()
   server.kill('SIGTERM')

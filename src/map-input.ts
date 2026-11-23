@@ -8,6 +8,7 @@ import type { NumberedResult } from './result-markers'
 
 export interface PinInput {
   showResults(results: readonly NumberedResult[]): void
+  focusResult(result: NumberedResult): void
   clearResults(): void
   destroy(): void
 }
@@ -83,7 +84,7 @@ export function createMapPinInput(
         element.setAttribute('role', 'button')
         element.setAttribute('tabindex', '0')
         element.setAttribute('aria-label', `${result.number}. ${result.title}`)
-        element.addEventListener('click', () => onResultSelected?.(result))
+        element.addEventListener('click', (event) => { event.stopPropagation(); onResultSelected?.(result) })
         element.addEventListener('keydown', (event) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
@@ -103,6 +104,12 @@ export function createMapPinInput(
         bounds.extend([pinAt.lng, pinAt.lat])
       }
       if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 32, maxZoom: 14 })
+    },
+    focusResult(result): void {
+      const center: [number, number] = [result.lng, result.lat]
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) map.jumpTo({ center, zoom: 14 })
+      else map.flyTo({ center, zoom: 14 })
+      if (window.matchMedia('(max-width: 768px)').matches) container.scrollIntoView({ block: 'center' })
     },
     clearResults,
     destroy(): void {

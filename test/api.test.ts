@@ -20,7 +20,8 @@ describe('request construction', () => {
       coordinateMode: 'direct',
       includeUniversal: false,
       significanceFloor: 0.05,
-      limit: 100,
+      limit: 25,
+      offset: 0,
     })
   })
 })

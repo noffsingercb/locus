@@ -1,7 +1,7 @@
 import './style.css'
 import { fetchNearby, NearbyError } from './api'
 import type { NearbyFailure, Point } from './api'
-import { DEBOUNCE_MS, DEFAULT_RADIUS_KM } from './config'
+import { DEBOUNCE_MS, DEFAULT_RADIUS_KM, TARGET_RESULTS } from './config'
 import { createMapPinInput } from './map-input'
 import { numberResults } from './result-markers'
 import type { NumberedResult } from './result-markers'
@@ -49,20 +49,23 @@ let radiusTimer: number | undefined
 let generation = 0
 let inFlight: AbortController | null = null
 let retryTimer: number | undefined
+let activeResults: NumberedResult[] = []
+let activeOffset = 0
+let activeBuild: string | null = null
 
 function clearRetryTimer(): void {
   if (retryTimer !== undefined) window.clearInterval(retryTimer)
   retryTimer = undefined
 }
 
-function wireRetry(point: Point, failure: NearbyFailure): void {
+function wireRetry(point: Point, failure: NearbyFailure, offset: number, expectedBuild: string | null): void {
   const button = results.querySelector<HTMLButtonElement>('[data-retry]')
   if (button === null) return
 
   button.addEventListener('click', () => {
     if (button.disabled) return
     clearRetryTimer()
-    void search(point)
+    void search(point, offset, expectedBuild)
   })
 
   if (failure.kind !== 'rate-limited') return
@@ -79,7 +82,7 @@ function wireRetry(point: Point, failure: NearbyFailure): void {
   }, 1000)
 }
 
-async function search(point: Point): Promise<void> {
+async function search(point: Point, offset = 0, expectedBuild: string | null = null): Promise<void> {
   if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
   radiusTimer = undefined
   currentPoint = point
@@ -93,12 +96,20 @@ async function search(point: Point): Promise<void> {
   const radiusKm = Number(radius.value)
   results.innerHTML = renderSearching(radiusKm)
   mapInput.clearResults()
+  activeResults = []
 
   try {
-    const response = await fetchNearby(point, radiusKm, { signal: controller.signal })
+    const response = await fetchNearby(point, radiusKm, { signal: controller.signal, offset })
     if (mine !== generation) return
+    if (offset > 0 && (!expectedBuild || response.datasetBuild !== expectedBuild)) {
+      results.innerHTML = '<p class="status status--error">The dataset changed or could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
+      return
+    }
+    activeOffset = offset
+    activeBuild = response.datasetBuild
+    activeResults = numberResults(response.entries, offset)
     results.innerHTML = renderResults(response)
-    mapInput.showResults(numberResults(response.entries))
+    mapInput.showResults(activeResults)
   } catch (error) {
     if (mine !== generation) return
     if (error instanceof Error && error.name === 'AbortError') return
@@ -107,7 +118,7 @@ async function search(point: Point): Promise<void> {
       : { kind: 'malformed' }
     results.innerHTML = renderFailure(failure)
     mapInput.clearResults()
-    wireRetry(point, failure)
+    wireRetry(point, failure, offset, expectedBuild)
   }
 }
 
@@ -125,6 +136,24 @@ const mapInput = createMapPinInput(
   DEBOUNCE_MS,
   revealCard,
 )
+
+results.addEventListener('click', (event) => {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  const number = target.closest<HTMLButtonElement>('[data-result-number]')
+  if (number) {
+    const result = activeResults.find(item => item.number === Number(number.dataset.resultNumber))
+    if (result) mapInput.focusResult(result)
+    return
+  }
+  if (currentPoint === null) return
+  if (target.closest('[data-restart]')) { void search(currentPoint); return }
+  const page = target.closest<HTMLButtonElement>('[data-page]')
+  if (page && !page.disabled) {
+    const offset = page.dataset.page === 'next' ? activeOffset + TARGET_RESULTS : Math.max(0, activeOffset - TARGET_RESULTS)
+    void search(currentPoint, offset, activeBuild)
+  }
+})
 
 // Invalidate old responses immediately, not only after the debounce expires.
 radius.addEventListener('input', () => {

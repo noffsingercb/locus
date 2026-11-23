@@ -22,7 +22,7 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
   const source = `<a class="source" href="${escapeHtml(entry.sourceUrl)}" target="_blank" rel="noopener noreferrer">Source</a>`
   const marker = number === undefined
     ? ''
-    : `<span class="entry-number" aria-hidden="true">${number}</span>`
+    : `<button type="button" class="entry-number" data-result-number="${number}" aria-label="Show ${title} on the map">${number}</button>`
   const id = number === undefined ? '' : ` id="${domIdForResult(number)}"`
 
   return [
@@ -37,21 +37,16 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
 }
 
 export function renderStatus(response: NearbyResponse): string {
-  const { returned, totalWithinRadius, radiusKm } = response
-  if (returned === 0) {
-    return `<p class="status status--empty">No matching records within ${radiusKm} km of this pin.</p><p class="status-detail">Coverage is uneven. Try a larger radius or move the pin.</p>`
-  }
-  const noun = returned === 1 ? 'record' : 'records'
-  if (totalWithinRadius > returned) {
-    return `<p class="status">Showing the ${returned} closest of ${totalWithinRadius} matching records within ${radiusKm} km, in date order.</p>`
-  }
-  return `<p class="status">Showing ${returned} matching ${noun} within ${radiusKm} km, in date order.</p>`
+  const { returned, totalWithinRadius, radiusKm, offset } = response
+  if (totalWithinRadius === 0) return `<p class="status status--empty">No matching records within ${radiusKm} km of this pin.</p><p class="status-detail">Coverage is uneven. Try a larger radius or move the pin.</p>`
+  return `<p class="status">Showing ${offset + 1}–${offset + returned} of ${totalWithinRadius} matching records within ${radiusKm} km.</p><p class="status-detail">Each page contains the next closest matches, ordered by date within that page.</p>`
 }
 
 export function renderResults(response: NearbyResponse): string {
-  const entries = response.entries.map((entry, index) => renderEntry(entry, index + 1)).join('')
+  const entries = response.entries.map((entry, index) => renderEntry(entry, response.offset + index + 1)).join('')
   const list = entries === '' ? '' : `<ol class="entries">${entries}</ol>`
-  return `${renderStatus(response)}${list}`
+  const pager = response.totalWithinRadius > 25 ? `<nav class="pagination" aria-label="Results pages"><button type="button" data-page="previous" ${response.offset === 0 ? 'disabled' : ''}>Previous</button><span>Page ${Math.floor(response.offset / 25) + 1}</span><button type="button" data-page="next" ${response.offset + response.returned >= response.totalWithinRadius ? 'disabled' : ''}>Next</button></nav>` : ''
+  return `${renderStatus(response)}${list}${pager}`
 }
 
 export function renderSearching(radiusKm: number): string {
@@ -61,7 +56,7 @@ export function renderSearching(radiusKm: number): string {
 export function renderIdle(): string {
   return [
     '<p class="status">Click the map to drop a pin.</p>',
-    '<p class="status-detail">Locus shows the historical events closest to that point, oldest first. The pin stays in your browser and is never stored.</p>',
+    '<p class="status-detail">Locus shows nearby historical events, ordered by date within each page. The pin stays in your browser and is never stored.</p>',
   ].join('')
 }
 
