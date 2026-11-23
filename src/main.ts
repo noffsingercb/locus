@@ -1,8 +1,7 @@
 import './style.css'
 import { fetchNearby, NearbyError } from './api'
 import type { NearbyFailure, Point } from './api'
-import { DEBOUNCE_MS, LADDER_KM } from './config'
-import { walkLadder } from './ladder'
+import { DEBOUNCE_MS, DEFAULT_RADIUS_KM } from './config'
 import { createMapPinInput } from './map-input'
 import { numberResults } from './result-markers'
 import type { NumberedResult } from './result-markers'
@@ -22,7 +21,13 @@ app.innerHTML = `
   </header>
   <div class="layout">
     <div id="map" class="map" role="application" aria-label="Map. Click to place a pin."></div>
-    <section id="results" class="results" aria-live="polite">${renderIdle()}</section>
+    <div class="results-column">
+      <div class="radius-control">
+        <label for="radius">Search radius: <output id="radius-value" for="radius">${DEFAULT_RADIUS_KM} km</output></label>
+        <input id="radius" type="range" min="5" max="200" step="5" value="${DEFAULT_RADIUS_KM}" />
+      </div>
+      <section id="results" class="results" aria-live="polite">${renderIdle()}</section>
+    </div>
   </div>
   <footer class="attribution">
     Event data from <a href="https://github.com/noffsingercb/GeoHistory" rel="noopener noreferrer">GeoHistory</a>,
@@ -37,7 +42,10 @@ const resultsElement = document.querySelector<HTMLElement>('#results')
 if (!mapElement || !resultsElement) throw new Error('Locus layout failed to mount')
 
 const results: HTMLElement = resultsElement
-const finalRungKm: number = LADDER_KM[LADDER_KM.length - 1]
+const radius = document.querySelector<HTMLInputElement>('#radius')!
+const radiusValue = document.querySelector<HTMLOutputElement>('#radius-value')!
+let currentPoint: Point | null = null
+let radiusTimer: number | undefined
 let generation = 0
 let inFlight: AbortController | null = null
 let retryTimer: number | undefined
@@ -72,6 +80,9 @@ function wireRetry(point: Point, failure: NearbyFailure): void {
 }
 
 async function search(point: Point): Promise<void> {
+  if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
+  radiusTimer = undefined
+  currentPoint = point
   clearRetryTimer()
   const mine = generation + 1
   generation = mine
@@ -79,17 +90,15 @@ async function search(point: Point): Promise<void> {
   const controller = new AbortController()
   inFlight = controller
 
-  results.innerHTML = renderSearching(LADDER_KM[0])
+  const radiusKm = Number(radius.value)
+  results.innerHTML = renderSearching(radiusKm)
   mapInput.clearResults()
 
   try {
-    const outcome = await walkLadder(async (radiusKm) => {
-      results.innerHTML = renderSearching(radiusKm)
-      return fetchNearby(point, radiusKm, { signal: controller.signal })
-    })
+    const response = await fetchNearby(point, radiusKm, { signal: controller.signal })
     if (mine !== generation) return
-    results.innerHTML = renderResults(outcome, finalRungKm)
-    mapInput.showResults(numberResults(outcome.response.entries))
+    results.innerHTML = renderResults(response)
+    mapInput.showResults(numberResults(response.entries))
   } catch (error) {
     if (mine !== generation) return
     if (error instanceof Error && error.name === 'AbortError') return
@@ -116,3 +125,18 @@ const mapInput = createMapPinInput(
   DEBOUNCE_MS,
   revealCard,
 )
+
+// Invalidate old responses immediately, not only after the debounce expires.
+radius.addEventListener('input', () => {
+  radiusValue.value = `${radius.value} km`
+  generation += 1
+  inFlight?.abort()
+  clearRetryTimer()
+  if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
+  mapInput.clearResults()
+  if (currentPoint === null) return
+  results.innerHTML = renderSearching(Number(radius.value))
+  radiusTimer = window.setTimeout(() => {
+    if (currentPoint !== null) void search(currentPoint)
+  }, DEBOUNCE_MS)
+})

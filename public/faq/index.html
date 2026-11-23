@@ -97,26 +97,15 @@
 			</details>
 
 			<details class="qa">
-				<summary>Why did it say "nothing within 5 km"?</summary>
-				<div class="answer">
-					<p>
-						Because there was nothing within 5 km, and Locus would rather tell you than quietly
-						widen the circle and let you assume otherwise. It searches 5, then 15, then 50, then
-						150 kilometres, stopping at the first circle that can fill a list of twelve.
-					</p>
-					<p>
-						A small town usually fills at 50 km and genuinely rural country at 150 km. That is
-						the record being thin, not the search being broken. The radius actually used is
-						always printed above the list.
-					</p>
-				</div>
+				<summary>Why are there few or no results?</summary>
+				<div class="answer"><p>Coverage varies by location. Try moving the pin or increasing the search radius with the slider. The radius is shown above the results.</p></div>
 			</details>
 
 			<details class="qa">
 				<summary>Why are the results out of distance order?</summary>
 				<div class="answer">
 					<p>
-						They are in date order on purpose. The twelve records are chosen by how close they
+						They are in date order on purpose. The displayed records are chosen by how close they
 						are and then shown oldest first, so what you read is a small chronology of one place
 						rather than a ranking.
 					</p>
@@ -138,7 +127,7 @@
 					</p>
 					<p>
 						They are still in the dataset and a later view may show them deliberately. They are
-						just not allowed to crowd out the twelve slots.
+						just not allowed to crowd out the results.
 					</p>
 				</div>
 			</details>
@@ -147,9 +136,9 @@
 				<summary>Why is every result the founding of a nearby town?</summary>
 				<div class="answer">
 					<p>
-						This happens at the wide rungs, and it is the record showing its shape. Municipal
+						This can happen at wide radii, and it is the record showing its shape. Municipal
 						foundings are by far the best-covered category of place-anchored history in
-						Wikidata, so once a search has to reach 50 or 150 kilometres they can fill the list
+						Wikidata, so when a search reaches 50 kilometres or more they can fill the list
 						on their own.
 					</p>
 					<p>
@@ -213,8 +202,7 @@
 				<summary>How does it decide what to show?</summary>
 				<div class="answer">
 					<p>
-						It asks one open dataset for the records physically nearest your pin, widening the
-						circle only as far as it must, and shows the closest twelve in date order.
+						It asks one open dataset for the records physically nearest your pin within your chosen radius, and shows up to 100 of the closest in date order.
 						<a href="/how-it-works">How this works</a> explains it properly.
 					</p>
 				</div>

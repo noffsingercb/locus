@@ -264,3 +264,7 @@
 .attribution a {
   color: var(--accent);
 }
+
+.radius-control { margin-bottom: 1rem; }
+.radius-control label { display: block; font-weight: 600; margin-bottom: .35rem; }
+.radius-control input { width: 100%; accent-color: var(--accent); }

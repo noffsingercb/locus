@@ -1,22 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { LadderOutcome } from '../src/ladder'
 import { renderEntry, renderFailure, renderResults, renderStatus } from '../src/view'
 import { makeEntry, makeEntries, makeResponse } from './fixtures'
-
-function outcomeOf(
-  entries = makeEntries(12),
-  overrides: Partial<LadderOutcome> = {},
-): LadderOutcome {
-  return {
-    response: makeResponse(15, entries),
-    rungKm: 15,
-    previousRungKm: null,
-    previousReturned: null,
-    satisfied: true,
-    requestCount: 1,
-    ...overrides,
-  }
-}
 
 describe('result presentation', () => {
   it('preserves API order and renders per-item attribution', () => {
@@ -24,7 +8,7 @@ describe('result presentation', () => {
       makeEntry({ id: 'Q-old', dateStart: '1850-01-01', distanceKm: 9.9, title: 'Older and further' }),
       makeEntry({ id: 'Q-new', dateStart: '1990-01-01', distanceKm: 0.2, title: 'Newer and nearer' }),
     ]
-    const html = renderResults(outcomeOf(entries), 150)
+    const html = renderResults(makeResponse(15, entries))
     expect(html.indexOf('Older and further')).toBeLessThan(html.indexOf('Newer and nearer'))
     expect(html.match(/class="source"/g)).toHaveLength(2)
   })
@@ -41,37 +25,15 @@ describe('result presentation', () => {
   })
 })
 
-describe('ladder states', () => {
-  it('distinguishes a short prior rung from an empty one', () => {
-    const short = renderStatus(outcomeOf(makeEntries(12), {
-      rungKm: 15,
-      previousRungKm: 5,
-      previousReturned: 4,
-    }), 150)
-    expect(short).toContain('Only 4 records within 5 km.')
-    expect(short).not.toContain('Nothing within 5 km.')
-
-    const empty = renderStatus(outcomeOf(makeEntries(12), {
-      rungKm: 15,
-      previousRungKm: 5,
-      previousReturned: 0,
-    }), 150)
-    expect(empty).toContain('Nothing within 5 km.')
+describe('radius result states', () => {
+  it('reports capped counts without claiming all holdings are shown', () => {
+    const html = renderStatus(makeResponse(200, makeEntries(100), { totalWithinRadius: 149 }))
+    expect(html).toContain('100 closest of 149 matching records within 200 km')
+    expect(html).not.toContain('everything GeoHistory holds')
   })
-
-  it('renders final short and empty states honestly', () => {
-    expect(renderStatus(outcomeOf(makeEntries(3), {
-      rungKm: 150,
-      previousRungKm: 50,
-      previousReturned: 2,
-      satisfied: false,
-    }), 150)).toContain('Only 3 records within 150 km.')
-    expect(renderStatus(outcomeOf([], {
-      rungKm: 150,
-      previousRungKm: 50,
-      previousReturned: 0,
-      satisfied: false,
-    }), 150)).toContain('No records within 150 km')
+  it('reports short and empty matching lists', () => {
+    expect(renderStatus(makeResponse(15, makeEntries(3)))).toContain('Showing 3 matching records within 15 km')
+    expect(renderStatus(makeResponse(5, []))).toContain('No matching records within 5 km')
   })
 })
 

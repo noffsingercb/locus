@@ -10,7 +10,7 @@
 		-->
 		<meta name="referrer" content="strict-origin-when-cross-origin" />
 		<title>How this works — Locus</title>
-		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, why results are shown in date order, and what is left out." />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<!--
 			The .ico covers the 16/32/48 sizes browsers still ask for by name and
@@ -33,7 +33,7 @@
 		<meta property="og:site_name" content="Locus" />
 		<meta property="og:url" content="https://www.locustimeline.org/how-it-works" />
 		<meta property="og:title" content="How this works — Locus" />
-		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, why results are shown in date order, and what is left out." />
 		<meta property="og:image" content="https://www.locustimeline.org/og-card.png" />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
@@ -82,52 +82,13 @@
 				buys you.
 			</p>
 
-			<h2>The radius ladder</h2>
-			<p>
-				Locus asks for a tight circle first and widens only if it has to, stopping at the first
-				radius that can fill a list of twelve.
-			</p>
-			<table>
-				<thead>
-					<tr>
-						<th scope="col">Rung</th>
-						<th scope="col">What it is for</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>5&nbsp;km</td>
-						<td>A dense city centre. Where the record is thick, this is the whole search.</td>
-					</tr>
-					<tr>
-						<td>15&nbsp;km</td>
-						<td>A metro area and its immediate surroundings.</td>
-					</tr>
-					<tr>
-						<td>50&nbsp;km</td>
-						<td>A small town's region. Most towns need this rung, and that is normal.</td>
-					</tr>
-					<tr>
-						<td>150&nbsp;km</td>
-						<td>Genuinely rural country. The last rung; Locus does not widen past it.</td>
-					</tr>
-				</tbody>
-			</table>
-			<p>
-				The radius actually used is always stated above the list, and when Locus had to widen it
-				says so in plain words rather than quietly pretending the first circle worked. If the last
-				rung still finds fewer than twelve records, you get the few that exist and a sentence
-				saying how few. If it finds none, you get told where it looked.
-			</p>
-			<p class="note">
-				The ladder lives in Locus, not in GeoHistory. The API takes one radius per call and
-				answers honestly; walking the rungs is a product decision, and it belongs on this side of
-				the line so a second client can make a different one.
-			</p>
+			<h2>Choose a radius</h2>
+			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus asks GeoHistory for up to 100 matching records; if more match, the list states how many were found and shows the closest 100.</p>
+			<p class="note">The search radius and filters are Locus product choices. GeoHistory answers one bounded request at a time.</p>
 
 			<h2>Chosen by distance, read by date</h2>
 			<p>
-				This is the part that is easy to get backwards. The twelve records are
+				This is the part that is easy to get backwards. The returned records are
 				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first. So the
 				list you read is a small chronology of one place, not a ranking — record five may well sit
 				closer to your pin than record one.
@@ -150,7 +111,7 @@
 			<p>
 				By default Locus asks GeoHistory to exclude them. Measured against the dataset, 85–94% of
 				the records nearest a dense city centre are births and deaths of minor figures; a list of
-				the twelve closest records without that filter answers "who was born or died here?"
+				the closest records without that filter answers "who was born or died here?"
 				instead of "what happened here?" The people are in the record and a later view may surface
 				them deliberately. They are not allowed to crowd out the answer you came for.
 			</p>

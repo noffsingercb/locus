@@ -1,7 +1,6 @@
 /** Pure rendering functions for every Locus state. */
 
-import type { NearbyEntry, NearbyFailure } from './api'
-import type { LadderOutcome } from './ladder'
+import type { NearbyEntry, NearbyFailure, NearbyResponse } from './api'
 import { formatDistance, formatEventDate } from './format'
 import { domIdForResult } from './result-markers'
 
@@ -37,40 +36,22 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
   ].join('')
 }
 
-export function renderStatus(outcome: LadderOutcome, finalRungKm: number): string {
-  const { response, rungKm, previousRungKm, previousReturned, satisfied } = outcome
-
-  if (response.returned === 0) {
-    return [
-      `<p class="status status--empty">No records within ${finalRungKm} km of this pin.</p>`,
-      '<p class="status-detail">GeoHistory\u2019s coverage is uneven: it is dense in North American and European cities and thin in rural areas and open water. Move the pin to try somewhere else.</p>',
-    ].join('')
+export function renderStatus(response: NearbyResponse): string {
+  const { returned, totalWithinRadius, radiusKm } = response
+  if (returned === 0) {
+    return `<p class="status status--empty">No matching records within ${radiusKm} km of this pin.</p><p class="status-detail">Coverage is uneven. Try a larger radius or move the pin.</p>`
   }
-
-  if (!satisfied) {
-    const plural = response.returned === 1 ? 'record' : 'records'
-    return `<p class="status status--short">Only ${response.returned} ${plural} within ${finalRungKm} km. That is everything GeoHistory holds near this pin.</p>`
+  const noun = returned === 1 ? 'record' : 'records'
+  if (totalWithinRadius > returned) {
+    return `<p class="status">Showing the ${returned} closest of ${totalWithinRadius} matching records within ${radiusKm} km, in date order.</p>`
   }
-
-  if (previousRungKm !== null && previousReturned !== null) {
-    const prior = previousReturned === 0
-      ? `Nothing within ${previousRungKm} km.`
-      : `Only ${previousReturned} ${previousReturned === 1 ? 'record' : 'records'} within ${previousRungKm} km.`
-    return `<p class="status status--escalated">${prior} Showing the closest records within ${rungKm} km.</p>`
-  }
-
-  return `<p class="status">Closest records within ${rungKm} km.</p>`
+  return `<p class="status">Showing ${returned} matching ${noun} within ${radiusKm} km, in date order.</p>`
 }
 
-export function renderResults(outcome: LadderOutcome, finalRungKm: number): string {
-  const entries = outcome.response.entries
-    .map((entry, index) => renderEntry(entry, index + 1))
-    .join('')
+export function renderResults(response: NearbyResponse): string {
+  const entries = response.entries.map((entry, index) => renderEntry(entry, index + 1)).join('')
   const list = entries === '' ? '' : `<ol class="entries">${entries}</ol>`
-  const counted = outcome.response.totalWithinRadius > outcome.response.returned
-    ? `<p class="status-detail">Showing the ${outcome.response.returned} closest of ${outcome.response.totalWithinRadius} within ${outcome.rungKm} km, in date order.</p>`
-    : ''
-  return `${renderStatus(outcome, finalRungKm)}${counted}${list}`
+  return `${renderStatus(response)}${list}`
 }
 
 export function renderSearching(radiusKm: number): string {
