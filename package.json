@@ -9,13 +9,15 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "node scripts/test-radius.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^6.11.2"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
+    "playwright": "1.63.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "vitest": "^2.1.4"
