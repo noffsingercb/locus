@@ -16,5 +16,4 @@ export const MAP_STYLE_URL: string =
 export const TARGET_RESULTS = 25
 export const DEFAULT_RADIUS_KM = 15
 export const SIGNIFICANCE_FLOOR = 0.05
-export const EXCLUDED_CATEGORIES = ['birth', 'death'] as const
 export const DEBOUNCE_MS = 400

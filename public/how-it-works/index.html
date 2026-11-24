@@ -83,42 +83,22 @@
 			</p>
 
 			<h2>Choose a radius</h2>
-			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus loads the next 25 closest matches as you scroll the results panel. A Load more button is also available. The list reports the total matching records.</p>
+			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus loads matching records 25 at a time as you scroll the results panel, oldest first across the whole list. A Load more button is also available. The list reports the total matching records.</p>
 			<p class="note">The search radius and filters are Locus product choices. GeoHistory answers one bounded request at a time.</p>
 
-			<h2>Chosen by distance, read by date</h2>
-			<p>
-				This is the part that is easy to get backwards. The returned records are
-				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first within each group. The full list is not globally chronological. So each group is a small chronology, not a ranking — record five may well sit
-				closer to your pin than record one.
-			</p>
-			<p>
-				The numbers on the map markers follow the reading order for exactly that reason. They are
-				positions in a list, not a relevance rank, because proximity order would imply the engine
-				computed an importance it never computed. Click a marker to jump to its card, or click a result number to zoom to its marker.
-			</p>
-
-			<h3>Ties never wobble</h3>
-			<p>
-				Two calls with the same pin return the same records in the same order, for a given build
-				of the dataset. Equal distance is broken by date, and an equal date by the record's own
-				identifier. Nothing is sampled and nothing is random.
-			</p>
+			<h2>Nearby history, read by date</h2>
+			<p>All matching records inside your chosen radius are ordered oldest first, even as more results load. The numbers on the map and list follow this reading order, not a ranking. Click a marker to jump to its card, or a result number to zoom to its marker.</p>
+			<p>Use the category filters to focus on kinds of events, or choose Notable events only to see records with higher GeoHistory significance scores. Those scores are estimates, not definitive judgments of importance. When dates tie, distance and then the record identifier provide a stable order.</p>
 
 			<h2>What is left out, and why</h2>
 			<h3>Births and deaths</h3>
-			<p>
-				By default Locus asks GeoHistory to exclude them. Measured against the dataset, 85–94% of
-				the records nearest a dense city centre are births and deaths of minor figures; a list of
-				the closest records without that filter answers "who was born or died here?"
-				instead of "what happened here?" The people are in the record and a later view may surface
-				them deliberately. They are not allowed to crowd out the answer you came for.
-			</p>
+			<p>People events are excluded by default, but you can turn on People in the category filters. Only records with a direct or curated location are included, so some births and deaths will still be missing.</p>
+
 			<h3>Events that were not about a place</h3>
 			<p>
 				A handful of records in GeoHistory are marked as reaching everyone alive rather than
 				anywhere in particular. Circa shows those on purpose, because a timeline of a life should
-				carry them. In a distance-first list they are noise — an event with no meaningful location
+				carry them. In a nearby list they are noise — an event with no meaningful location
 				cannot be near you — so Locus leaves them out.
 			</p>
 			<h3>Records pinned to a country's centre</h3>

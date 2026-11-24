@@ -30,6 +30,8 @@ describe('radius result states', () => {
     const html = renderStatus(makeResponse(200, makeEntries(25), { totalWithinRadius: 149 }))
     expect(html).toContain('Showing 25 of 149 matching records within 200 km')
     expect(html).not.toContain('everything GeoHistory holds')
+    expect(html).toContain('Lots to explore')
+    expect(renderStatus(makeResponse(15, makeEntries(3), { totalWithinRadius: 100 }))).not.toContain('Lots to explore')
   })
   it('reports short and empty matching lists', () => {
     expect(renderStatus(makeResponse(15, makeEntries(3)))).toContain('Showing 3 of 3 matching records within 15 km')
@@ -42,6 +44,12 @@ describe('failure states', () => {
     const html = renderFailure({ kind: 'rate-limited', retryAfterSeconds: 30 })
     expect(html).toContain('data-retry disabled')
     expect(html).toContain('Retry in 30 seconds')
+  })
+
+  it('suggests available controls on a broad-search overflow', () => {
+    const html = renderFailure({ kind: 'rejected', status: 422, message: 'Candidate set exceeds 10000 rows; narrow the radius or date window.' })
+    expect(html).toContain('smaller radius or adjust the filters')
+    expect(html).not.toContain('date window')
   })
 
   it('offers immediate retry for a transport failure', () => {

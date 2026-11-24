@@ -2,6 +2,7 @@ import './style.css'
 import { fetchNearby, NearbyError } from './api'
 import type { NearbyFailure, Point } from './api'
 import { DEBOUNCE_MS, DEFAULT_RADIUS_KM } from './config'
+import { EVENT_CATEGORIES, makeFilters } from './filters'
 import { createMapPinInput } from './map-input'
 import { numberResults } from './result-markers'
 import type { NumberedResult } from './result-markers'
@@ -26,6 +27,20 @@ app.innerHTML = `
         <label for="radius">Search radius: <output id="radius-value" for="radius">${DEFAULT_RADIUS_KM} km</output></label>
         <input id="radius" type="range" min="5" max="200" step="5" value="${DEFAULT_RADIUS_KM}" />
       </div>
+      <div class="filter-bar">
+        <label class="filter-option"><input id="notable" type="checkbox" /> Notable events only</label>
+        <span class="filter-help">Shows records with a GeoHistory significance score of 0.9 or higher. Scores are estimates.</span>
+        <details class="category-filter">
+          <summary>Filter event categories</summary>
+          <fieldset>
+            <legend>Show categories</legend>
+            <div class="category-grid">${EVENT_CATEGORIES.map(([id, label]) => `<label><input type="checkbox" data-category="${id}" checked /> ${label}</label>`).join('')}
+              <label><input type="checkbox" id="people" /> People (births and deaths)</label>
+            </div>
+            <p class="filter-help">People are off by default. Only records with a direct or curated location are shown; some people events may be missing.</p>
+          </fieldset>
+        </details>
+      </div>
       <section id="results" class="results" aria-label="Nearby results" tabindex="0">${renderIdle()}</section>
     </div>
   </div>
@@ -44,6 +59,12 @@ if (!mapElement || !resultsElement) throw new Error('Locus layout failed to moun
 const results: HTMLElement = resultsElement
 const radius = document.querySelector<HTMLInputElement>('#radius')!
 const radiusValue = document.querySelector<HTMLOutputElement>('#radius-value')!
+const notable = document.querySelector<HTMLInputElement>('#notable')!
+const people = document.querySelector<HTMLInputElement>('#people')!
+const categories = [...document.querySelectorAll<HTMLInputElement>('[data-category]')]
+function currentFilters() {
+  return makeFilters(categories.filter(item => !item.checked).map(item => item.dataset.category!), people.checked, notable.checked)
+}
 let currentPoint: Point | null = null
 let radiusTimer: number | undefined
 let generation = 0
@@ -109,7 +130,7 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
   results.scrollTop = 0
 
   try {
-    const response = await fetchNearby(point, radiusKm, { signal: controller.signal, offset })
+    const response = await fetchNearby(point, radiusKm, { signal: controller.signal, offset, filters: currentFilters() })
     if (mine !== generation) return
     if (offset > 0 && (!expectedBuild || response.datasetBuild !== expectedBuild)) {
       results.innerHTML = '<p class="status status--error">The dataset changed or could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
@@ -154,7 +175,7 @@ async function loadMore(): Promise<void> {
   const controller = new AbortController()
   inFlight = controller
   try {
-    const response = await fetchNearby(point, Number(radius.value), { signal: controller.signal, offset })
+    const response = await fetchNearby(point, Number(radius.value), { signal: controller.signal, offset, filters: currentFilters() })
     if (mine !== generation) return
     if (response.datasetBuild !== activeBuild || response.totalWithinRadius !== activeTotal) {
       allowAutoLoad = false
@@ -234,4 +255,16 @@ radius.addEventListener('input', () => {
   radiusTimer = window.setTimeout(() => {
     if (currentPoint !== null) void search(currentPoint)
   }, DEBOUNCE_MS)
+})
+
+// Invalidate in-flight pages immediately and restart with a consistent filter snapshot.
+for (const control of [notable, people, ...categories]) control.addEventListener('change', () => {
+  generation += 1
+  inFlight?.abort()
+  allowAutoLoad = false
+  loadingMore = false
+  clearRetryTimer()
+  if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
+  mapInput.clearResults()
+  if (currentPoint !== null) void search(currentPoint)
 })

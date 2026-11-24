@@ -35,11 +35,14 @@ try {
     const body = request.postDataJSON()
     requests.push({ method: request.method(), url: request.url(), body })
     if (failNext) { failNext = false; await route.fulfill({ status: 503, json: { error: 'Temporary failure' }, headers: { 'access-control-allow-origin': '*' } }); return }
-    const total = body.radiusKm === 200 ? 149 : 1
+    const baseTotal = body.radiusKm === 200 ? 149 : 1
+    const all = Array.from({ length: baseTotal }, (_, i) => ({ id: `Q${i}`, title: `Record ${i}`, displayTitle: null, blurb: null, dateStart: `${1800 + Math.floor(i / 12)}-${String(i % 12 + 1).padStart(2, '0')}-01`, dateEnd: null, datePrecision: 'day', category: i % 2 ? 'event' : 'founding', scope: 'local', significance: i % 3 === 0 ? 0.95 : 0.5, notability: 0.5, coordSource: 'P625', lat: 39.7392 + i / 10000, lng: -104.9903 + i / 10000, distanceKm: i / 10, sourceUrl: `https://example.org/${i}` }))
+    const filtered = all.filter(e => !body.excludeCategories.includes(e.category) && e.significance >= body.significanceFloor)
+    const total = filtered.length
     const offset = body.offset
-    const count = Math.min(body.limit, total - offset)
-    const entries = Array.from({ length: count }, (_, n) => { const i = offset + n; return ({ id: `Q${i}`, title: `Record ${i}`, displayTitle: null, blurb: null, dateStart: '1900-01-01', dateEnd: null, datePrecision: 'day', category: 'event', scope: 'local', significance: 0.5, notability: 0.5, coordSource: 'P625', lat: 39.7392 + i / 10000, lng: -104.9903 + i / 10000, distanceKm: i / 10, sourceUrl: `https://example.org/${i}` }) })
-    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: build, engine: 'test', radiusKm: body.radiusKm, coordinateMode: 'direct', significanceFloor: 0.05, totalWithinRadius: total, offset, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
+    const entries = filtered.slice(offset, offset + body.limit)
+    const count = entries.length
+    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: build, engine: 'test', radiusKm: body.radiusKm, coordinateMode: 'direct', order: body.order, significanceFloor: body.significanceFloor, totalWithinRadius: total, offset, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
   })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto(`http://127.0.0.1:${port}/`)
@@ -49,6 +52,7 @@ try {
   await page.locator('#radius').fill('200')
   await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 149'))
   assert.equal(await page.locator('.entry').count(), 25)
+  assert.ok(await page.getByText('Lots to explore', { exact: false }).isVisible())
   const panel = page.locator('#results')
   assert.equal(await panel.evaluate(e => getComputedStyle(e).overflowY), 'auto')
   assert.ok(await panel.evaluate(e => e.scrollHeight > e.clientHeight))
@@ -94,7 +98,25 @@ try {
   await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('dataset changed'))
   assert.equal(await page.locator('.entry').count(), 25, 'changed dataset does not mix new entries')
   assert.deepEqual(requests.map(r => r.body.offset), [0, 0, 25, 50, 75, 75, 100, 125, 0, 0, 25])
-  assert.ok(requests.every(r => r.method === 'POST' && r.body.limit === 25 && !r.url.includes('?')))
+  assert.ok(requests.every(r => r.method === 'POST' && r.body.limit === 25 && r.body.order === 'chronological' && !r.url.includes('?')))
+  build = 'test'
+  await page.getByText('Filter event categories').click()
+  await page.locator('[data-category="founding"]').uncheck()
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 74'))
+  assert.ok(requests.at(-1).body.excludeCategories.includes('founding'))
+  assert.equal(await page.getByText('Lots to explore', { exact: false }).count(), 0)
+  await page.locator('#notable').check()
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 25'))
+  assert.equal(requests.at(-1).body.significanceFloor, 0.9)
+  assert.ok(requests.at(-1).body.excludeCategories.includes('founding'))
+  const peopleResponse = page.waitForResponse(response => response.url().endsWith('/v1/nearby') && !response.request().postDataJSON().excludeCategories.includes('birth'))
+  await page.locator('#people').check()
+  await peopleResponse
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 25'))
+  assert.ok(!requests.at(-1).body.excludeCategories.includes('birth'))
+  await page.locator('#notable').uncheck()
+  await page.locator('[data-category="founding"]').check()
+  await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 149'))
 
   // On a stacked small screen, selecting a card brings the offscreen map back.
   await page.setViewportSize({ width: 420, height: 760 })

@@ -2,10 +2,11 @@
 
 import {
   API_BASE_URL,
-  EXCLUDED_CATEGORIES,
   SIGNIFICANCE_FLOOR,
   TARGET_RESULTS,
 } from './config'
+import { makeFilters, NOTABLE_FLOOR } from './filters'
+import type { ResultFilters } from './filters'
 
 export interface Point {
   lat: number
@@ -40,6 +41,7 @@ export interface NearbyResponse {
   coordinateMode: string
   significanceFloor: number
   totalWithinRadius: number
+  order: 'chronological'
   offset: number
   returned: number
   entries: NearbyEntry[]
@@ -66,6 +68,7 @@ export function buildNearbyRequest(
   radiusKm: number,
   baseUrl: string = API_BASE_URL,
   offset = 0,
+  filters: ResultFilters = makeFilters(),
 ): { url: string; body: string } {
   return {
     url: `${baseUrl}/v1/nearby`,
@@ -75,9 +78,10 @@ export function buildNearbyRequest(
       radiusKm,
       limit: TARGET_RESULTS,
       offset,
-      significanceFloor: SIGNIFICANCE_FLOOR,
+      order: 'chronological',
+      significanceFloor: filters.notableOnly ? NOTABLE_FLOOR : SIGNIFICANCE_FLOOR,
       coordinateMode: 'direct',
-      excludeCategories: [...EXCLUDED_CATEGORIES],
+      excludeCategories: [...filters.excludeCategories],
       includeUniversal: false,
     }),
   }
@@ -127,6 +131,7 @@ function isNearbyResponse(value: unknown): value is NearbyResponse {
   if (!nullableString(payload.datasetBuild)) return false
   if (typeof payload.engine !== 'string') return false
   if (typeof payload.radiusKm !== 'number') return false
+  if (payload.order !== 'chronological') return false
   if (typeof payload.offset !== 'number' || !Number.isInteger(payload.offset) || payload.offset < 0) return false
   if (typeof payload.returned !== 'number' || !Number.isInteger(payload.returned)) return false
   if (typeof payload.totalWithinRadius !== 'number' || !Number.isInteger(payload.totalWithinRadius)) return false
@@ -158,6 +163,7 @@ export interface FetchNearbyOptions {
   fetchImpl?: typeof fetch
   baseUrl?: string
   offset?: number
+  filters?: ResultFilters
 }
 
 export async function fetchNearby(
@@ -166,7 +172,7 @@ export async function fetchNearby(
   options: FetchNearbyOptions = {},
 ): Promise<NearbyResponse> {
   const doFetch = options.fetchImpl ?? globalThis.fetch
-  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL, options.offset ?? 0)
+  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL, options.offset ?? 0, options.filters)
 
   let response: Response
   try {

@@ -44,6 +44,7 @@ export function makeResponse(
     engine: 'geohistory-nearby@0.1.1',
     radiusKm,
     coordinateMode: 'direct',
+    order: 'chronological',
     significanceFloor: 0.05,
     totalWithinRadius: entries.length,
     offset: 0,

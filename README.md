@@ -6,7 +6,7 @@ Locus is a standalone, privacy-first client of the public [GeoHistory](https://g
 
 ## How it works
 
-A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 to 200 km; Locus loads matching records in groups of 25 as you scroll the results panel; a Load more button is also available. GeoHistory selects each group by distance and returns it in date order; the combined list is not globally chronological. The list number focuses its map marker, bringing the map into view if needed. Births and deaths are excluded by client policy. Wide-radius results can still be founding-heavy; that is a corpus limitation, not a hidden ranking claim.
+A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 to 200 km; Locus loads matching records in groups of 25 as you scroll the results panel; a Load more button is also available. GeoHistory sorts the complete matching set chronologically before selecting each group, so the entire list is in date order. Category checkboxes filter server-side; the optional Notable filter requires a significance score of at least 0.9 (an estimate, not an objective judgment). A gentle suggestion appears above 100 matches; it is not a cutoff. The list number focuses its map marker, bringing the map into view if needed. Births and deaths are excluded by default and may be enabled with the People filter. Only direct or curated locations are shown, so some people events will be missing. Unknown categories remain visible. Wide-radius results can still be founding-heavy; that is a corpus limitation, not a hidden ranking claim.
 
 ## Privacy
 
