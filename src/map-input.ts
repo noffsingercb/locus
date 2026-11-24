@@ -8,6 +8,7 @@ import type { NumberedResult } from './result-markers'
 
 export interface PinInput {
   showResults(results: readonly NumberedResult[]): void
+  appendResults(results: readonly NumberedResult[]): void
   focusResult(result: NumberedResult): void
   clearResults(): void
   destroy(): void
@@ -72,44 +73,49 @@ export function createMapPinInput(
     while (resultMarkers.length > 0) resultMarkers.pop()?.remove()
   }
 
+  const addResults = (numbered: readonly NumberedResult[]): LngLatBounds => {
+    const bounds = new LngLatBounds()
+    for (const result of numbered) {
+      const element = markerElement('locus-result-pin', String(result.number))
+      element.title = `${result.number}. ${result.title}`
+      element.setAttribute('role', 'button')
+      element.setAttribute('tabindex', '0')
+      element.setAttribute('aria-label', `${result.number}. ${result.title}`)
+      element.addEventListener('click', (event) => { event.stopPropagation(); onResultSelected?.(result) })
+      element.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onResultSelected?.(result)
+        }
+      })
+      resultMarkers.push(new Marker({ element, anchor: 'center' }).setLngLat([result.lng, result.lat]).addTo(map))
+      bounds.extend([result.lng, result.lat])
+    }
+    return bounds
+  }
+
   return {
     showResults(numbered: readonly NumberedResult[]): void {
       clearResults()
       if (numbered.length === 0) return
-
-      const bounds = new LngLatBounds()
-      for (const result of numbered) {
-        const element = markerElement('locus-result-pin', String(result.number))
-        element.title = `${result.number}. ${result.title}`
-        element.setAttribute('role', 'button')
-        element.setAttribute('tabindex', '0')
-        element.setAttribute('aria-label', `${result.number}. ${result.title}`)
-        element.addEventListener('click', (event) => { event.stopPropagation(); onResultSelected?.(result) })
-        element.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            onResultSelected?.(result)
-          }
-        })
-
-        const resultMarker = new Marker({ element, anchor: 'center' })
-          .setLngLat([result.lng, result.lat])
-          .addTo(map)
-        resultMarkers.push(resultMarker)
-        bounds.extend([result.lng, result.lat])
-      }
-
+      const bounds = addResults(numbered)
       if (marker !== null) {
         const pinAt = marker.getLngLat()
         bounds.extend([pinAt.lng, pinAt.lat])
       }
       if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 32, maxZoom: 14 })
     },
+    appendResults(numbered: readonly NumberedResult[]): void {
+      addResults(numbered)
+    },
     focusResult(result): void {
       const center: [number, number] = [result.lng, result.lat]
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) map.jumpTo({ center, zoom: 14 })
       else map.flyTo({ center, zoom: 14 })
-      if (window.matchMedia('(max-width: 768px)').matches) container.scrollIntoView({ block: 'center' })
+      const bounds = container.getBoundingClientRect()
+      if (bounds.top < 0 || bounds.bottom > window.innerHeight) {
+        container.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      }
     },
     clearResults,
     destroy(): void {

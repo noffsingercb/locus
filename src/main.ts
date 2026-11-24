@@ -1,11 +1,11 @@
 import './style.css'
 import { fetchNearby, NearbyError } from './api'
 import type { NearbyFailure, Point } from './api'
-import { DEBOUNCE_MS, DEFAULT_RADIUS_KM, TARGET_RESULTS } from './config'
+import { DEBOUNCE_MS, DEFAULT_RADIUS_KM } from './config'
 import { createMapPinInput } from './map-input'
 import { numberResults } from './result-markers'
 import type { NumberedResult } from './result-markers'
-import { renderFailure, renderIdle, renderResults, renderSearching } from './view'
+import { renderEntry, renderFailure, renderIdle, renderResults, renderSearching } from './view'
 
 const app = document.querySelector<HTMLElement>('#app')
 if (!app) throw new Error('Locus application root is missing')
@@ -26,7 +26,7 @@ app.innerHTML = `
         <label for="radius">Search radius: <output id="radius-value" for="radius">${DEFAULT_RADIUS_KM} km</output></label>
         <input id="radius" type="range" min="5" max="200" step="5" value="${DEFAULT_RADIUS_KM}" />
       </div>
-      <section id="results" class="results" aria-live="polite">${renderIdle()}</section>
+      <section id="results" class="results" aria-label="Nearby results" tabindex="0">${renderIdle()}</section>
     </div>
   </div>
   <footer class="attribution">
@@ -51,21 +51,25 @@ let inFlight: AbortController | null = null
 let retryTimer: number | undefined
 let activeResults: NumberedResult[] = []
 let activeOffset = 0
+let activeTotal = 0
 let activeBuild: string | null = null
+let loadingMore = false
+let allowAutoLoad = false
 
 function clearRetryTimer(): void {
   if (retryTimer !== undefined) window.clearInterval(retryTimer)
   retryTimer = undefined
 }
 
-function wireRetry(point: Point, failure: NearbyFailure, offset: number, expectedBuild: string | null): void {
+function wireRetry(point: Point, failure: NearbyFailure, offset: number, expectedBuild: string | null, append = false): void {
   const button = results.querySelector<HTMLButtonElement>('[data-retry]')
   if (button === null) return
 
   button.addEventListener('click', () => {
     if (button.disabled) return
     clearRetryTimer()
-    void search(point, offset, expectedBuild)
+    if (append) void loadMore()
+    else void search(point, offset, expectedBuild)
   })
 
   if (failure.kind !== 'rate-limited') return
@@ -97,6 +101,12 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
   results.innerHTML = renderSearching(radiusKm)
   mapInput.clearResults()
   activeResults = []
+  activeOffset = 0
+  activeTotal = 0
+  activeBuild = null
+  loadingMore = false
+  allowAutoLoad = false
+  results.scrollTop = 0
 
   try {
     const response = await fetchNearby(point, radiusKm, { signal: controller.signal, offset })
@@ -105,8 +115,10 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
       results.innerHTML = '<p class="status status--error">The dataset changed or could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
       return
     }
-    activeOffset = offset
+    activeOffset = offset + response.returned
+    activeTotal = response.totalWithinRadius
     activeBuild = response.datasetBuild
+    allowAutoLoad = true
     activeResults = numberResults(response.entries, offset)
     results.innerHTML = renderResults(response)
     mapInput.showResults(activeResults)
@@ -119,6 +131,56 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
     results.innerHTML = renderFailure(failure)
     mapInput.clearResults()
     wireRetry(point, failure, offset, expectedBuild)
+  }
+}
+
+// Fetch only when the reader reaches the end or requests another group. Keep
+// existing cards and map state intact while the next group is in flight.
+async function loadMore(): Promise<void> {
+  if (currentPoint === null || loadingMore || activeOffset >= activeTotal) return
+  const point = currentPoint
+  const offset = activeOffset
+  const mine = generation
+  const more = results.querySelector<HTMLElement>('.more-status')
+  if (!more) return
+  if (!activeBuild) {
+    allowAutoLoad = false
+    more.innerHTML = '<p class="status status--error">The dataset could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
+    return
+  }
+  clearRetryTimer()
+  loadingMore = true
+  more.innerHTML = '<p class="status status--busy">Loading more results…</p>'
+  const controller = new AbortController()
+  inFlight = controller
+  try {
+    const response = await fetchNearby(point, Number(radius.value), { signal: controller.signal, offset })
+    if (mine !== generation) return
+    if (response.datasetBuild !== activeBuild || response.totalWithinRadius !== activeTotal) {
+      allowAutoLoad = false
+      more.innerHTML = '<p class="status status--error">The dataset changed or could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
+      return
+    }
+    if (response.returned === 0) throw new NearbyError({ kind: 'malformed' })
+    const list = results.querySelector<HTMLOListElement>('.entries')
+    if (!list) throw new NearbyError({ kind: 'malformed' })
+    const next = numberResults(response.entries, offset)
+    list.insertAdjacentHTML('beforeend', response.entries.map((entry, index) => renderEntry(entry, offset + index + 1)).join(''))
+    activeResults.push(...next)
+    activeOffset += response.returned
+    mapInput.appendResults(next)
+    const count = results.querySelector<HTMLElement>('[data-count]')
+    if (count) count.textContent = `Showing ${activeOffset} of ${activeTotal} matching records within ${response.radiusKm} km.`
+    more.innerHTML = activeOffset < activeTotal ? '<button type="button" class="retry" data-more>Load more results</button>' : '<p class="status-detail">All matching results loaded.</p>'
+    allowAutoLoad = true
+  } catch (error) {
+    if (mine !== generation || (error instanceof Error && error.name === 'AbortError')) return
+    const failure: NearbyFailure = error instanceof NearbyError ? error.failure : { kind: 'malformed' }
+    allowAutoLoad = false
+    more.innerHTML = renderFailure(failure)
+    wireRetry(point, failure, offset, activeBuild, true)
+  } finally {
+    if (mine === generation) loadingMore = false
   }
 }
 
@@ -148,11 +210,13 @@ results.addEventListener('click', (event) => {
   }
   if (currentPoint === null) return
   if (target.closest('[data-restart]')) { void search(currentPoint); return }
-  const page = target.closest<HTMLButtonElement>('[data-page]')
-  if (page && !page.disabled) {
-    const offset = page.dataset.page === 'next' ? activeOffset + TARGET_RESULTS : Math.max(0, activeOffset - TARGET_RESULTS)
-    void search(currentPoint, offset, activeBuild)
-  }
+  if (target.closest('[data-more]')) void loadMore()
+})
+
+// Keyboard users can focus the scroll region; the button remains available
+// without relying on scroll events or automatic loading.
+results.addEventListener('scroll', () => {
+  if (allowAutoLoad && results.scrollHeight - results.scrollTop - results.clientHeight < 80) void loadMore()
 })
 
 // Invalidate old responses immediately, not only after the debounce expires.
@@ -160,6 +224,8 @@ radius.addEventListener('input', () => {
   radiusValue.value = `${radius.value} km`
   generation += 1
   inFlight?.abort()
+  allowAutoLoad = false
+  loadingMore = false
   clearRetryTimer()
   if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
   mapInput.clearResults()

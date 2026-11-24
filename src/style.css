@@ -135,6 +135,10 @@
 
 .results {
   min-height: 12rem;
+  max-height: max(20rem, min(70vh, 48rem));
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
 }
 
 .status {
@@ -196,10 +200,8 @@
   color: var(--accent);
   cursor: pointer;
 }
-.entry-number:focus-visible, .pagination button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-.pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; }
-.pagination button { cursor: pointer; padding: 0.5rem 0.8rem; }
-.pagination button:disabled { cursor: not-allowed; opacity: 0.5; }
+.entry-number:focus-visible, .retry:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.more-status { margin: 1rem 0; }
 
 .entry--active {
   border-color: var(--accent);

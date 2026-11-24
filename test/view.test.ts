@@ -28,11 +28,11 @@ describe('result presentation', () => {
 describe('radius result states', () => {
   it('reports capped counts without claiming all holdings are shown', () => {
     const html = renderStatus(makeResponse(200, makeEntries(25), { totalWithinRadius: 149 }))
-    expect(html).toContain('Showing 1–25 of 149 matching records within 200 km')
+    expect(html).toContain('Showing 25 of 149 matching records within 200 km')
     expect(html).not.toContain('everything GeoHistory holds')
   })
   it('reports short and empty matching lists', () => {
-    expect(renderStatus(makeResponse(15, makeEntries(3)))).toContain('Showing 1–3 of 3 matching records within 15 km')
+    expect(renderStatus(makeResponse(15, makeEntries(3)))).toContain('Showing 3 of 3 matching records within 15 km')
     expect(renderStatus(makeResponse(5, []))).toContain('No matching records within 5 km')
   })
 })
