@@ -10,7 +10,7 @@
 		-->
 		<meta name="referrer" content="strict-origin-when-cross-origin" />
 		<title>How this works — Locus</title>
-		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, why results are shown in date order, and what is left out." />
+		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, how nearby results are grouped and ordered, and what is left out." />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<!--
 			The .ico covers the 16/32/48 sizes browsers still ask for by name and
@@ -33,7 +33,7 @@
 		<meta property="og:site_name" content="Locus" />
 		<meta property="og:url" content="https://www.locustimeline.org/how-it-works" />
 		<meta property="og:title" content="How this works — Locus" />
-		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, why results are shown in date order, and what is left out." />
+		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, how nearby results are grouped and ordered, and what is left out." />
 		<meta property="og:image" content="https://www.locustimeline.org/og-card.png" />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
@@ -83,13 +83,13 @@
 			</p>
 
 			<h2>Choose a radius</h2>
-			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus displays 25 records per page, with the next closest matches on each page. The list reports the total matching records.</p>
+			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus loads the next 25 closest matches as you scroll the results panel. A Load more button is also available. The list reports the total matching records.</p>
 			<p class="note">The search radius and filters are Locus product choices. GeoHistory answers one bounded request at a time.</p>
 
 			<h2>Chosen by distance, read by date</h2>
 			<p>
 				This is the part that is easy to get backwards. The returned records are
-				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first within each page. Pages are not globally chronological. So each page is a small chronology, not a ranking — record five may well sit
+				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first within each group. The full list is not globally chronological. So each group is a small chronology, not a ranking — record five may well sit
 				closer to your pin than record one.
 			</p>
 			<p>
