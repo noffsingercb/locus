@@ -10,7 +10,7 @@
 		-->
 		<meta name="referrer" content="strict-origin-when-cross-origin" />
 		<title>How this works — Locus</title>
-		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<meta name="description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, how nearby results are grouped and ordered, and what is left out." />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<!--
 			The .ico covers the 16/32/48 sizes browsers still ask for by name and
@@ -33,7 +33,7 @@
 		<meta property="og:site_name" content="Locus" />
 		<meta property="og:url" content="https://www.locustimeline.org/how-it-works" />
 		<meta property="og:title" content="How this works — Locus" />
-		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius ladder, why results are shown in date order, and what is left out." />
+		<meta property="og:description" content="How Locus turns one dropped pin into a list of the closest historical records: the radius control, how nearby results are grouped and ordered, and what is left out." />
 		<meta property="og:image" content="https://www.locustimeline.org/og-card.png" />
 		<meta property="og:image:width" content="1200" />
 		<meta property="og:image:height" content="630" />
@@ -82,90 +82,30 @@
 				buys you.
 			</p>
 
-			<h2>The radius ladder</h2>
-			<p>
-				Locus asks for a tight circle first and widens only if it has to, stopping at the first
-				radius that can fill a list of twelve.
-			</p>
-			<table>
-				<thead>
-					<tr>
-						<th scope="col">Rung</th>
-						<th scope="col">What it is for</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>5&nbsp;km</td>
-						<td>A dense city centre. Where the record is thick, this is the whole search.</td>
-					</tr>
-					<tr>
-						<td>15&nbsp;km</td>
-						<td>A metro area and its immediate surroundings.</td>
-					</tr>
-					<tr>
-						<td>50&nbsp;km</td>
-						<td>A small town's region. Most towns need this rung, and that is normal.</td>
-					</tr>
-					<tr>
-						<td>150&nbsp;km</td>
-						<td>Genuinely rural country. The last rung; Locus does not widen past it.</td>
-					</tr>
-				</tbody>
-			</table>
-			<p>
-				The radius actually used is always stated above the list, and when Locus had to widen it
-				says so in plain words rather than quietly pretending the first circle worked. If the last
-				rung still finds fewer than twelve records, you get the few that exist and a sentence
-				saying how few. If it finds none, you get told where it looked.
-			</p>
-			<p class="note">
-				The ladder lives in Locus, not in GeoHistory. The API takes one radius per call and
-				answers honestly; walking the rungs is a product decision, and it belongs on this side of
-				the line so a second client can make a different one.
-			</p>
+			<h2>Choose a radius</h2>
+			<p>Use the slider to search from 5 to 200 km around the pin. The default is 15 km. Locus automatically loads all matching records into the results panel, oldest first across the whole list. The list reports the total matching records.</p>
+			<p class="note">The search radius and filters are Locus product choices. GeoHistory answers one bounded request at a time.</p>
 
-			<h2>Chosen by distance, read by date</h2>
-			<p>
-				This is the part that is easy to get backwards. The twelve records are
-				<em>selected</em> by how close they are, and then <em>displayed</em> oldest first. So the
-				list you read is a small chronology of one place, not a ranking — record five may well sit
-				closer to your pin than record one.
-			</p>
-			<p>
-				The numbers on the map markers follow the reading order for exactly that reason. They are
-				positions in a list, not a relevance rank, because proximity order would imply the engine
-				computed an importance it never computed. Click a marker to jump to its card.
-			</p>
-
-			<h3>Ties never wobble</h3>
-			<p>
-				Two calls with the same pin return the same records in the same order, for a given build
-				of the dataset. Equal distance is broken by date, and an equal date by the record's own
-				identifier. Nothing is sampled and nothing is random.
-			</p>
+			<h2>Nearby history, read by date</h2>
+			<p>All matching records inside your chosen radius are ordered oldest first, even as more results load. The numbers on the map and list follow this reading order, not a ranking. Click a marker to jump to its card, or a result number to zoom to its marker.</p>
+			<p>Use the category filters to focus on kinds of events, or choose Notable events only to see records with higher GeoHistory significance scores. Those scores are estimates, not definitive judgments of importance. When dates tie, distance and then the record identifier provide a stable order.</p>
 
 			<h2>What is left out, and why</h2>
 			<h3>Births and deaths</h3>
-			<p>
-				By default Locus asks GeoHistory to exclude them. Measured against the dataset, 85–94% of
-				the records nearest a dense city centre are births and deaths of minor figures; a list of
-				the twelve closest records without that filter answers "who was born or died here?"
-				instead of "what happened here?" The people are in the record and a later view may surface
-				them deliberately. They are not allowed to crowd out the answer you came for.
-			</p>
+			<p>People events are excluded by default, but you can turn on People in the category filters. When enabled, births and deaths can use a birthplace or death-place coordinate; cards label these as approximate places, not exact event sites. Other inferred locations remain excluded.</p>
+
 			<h3>Events that were not about a place</h3>
 			<p>
 				A handful of records in GeoHistory are marked as reaching everyone alive rather than
 				anywhere in particular. Circa shows those on purpose, because a timeline of a life should
-				carry them. In a distance-first list they are noise — an event with no meaningful location
+				carry them. In a nearby list they are noise — an event with no meaningful location
 				cannot be near you — so Locus leaves them out.
 			</p>
 			<h3>Records pinned to a country's centre</h3>
 			<p>
 				Some events are placed by a fallback claim rather than their own coordinate, which can put
 				a national treaty three kilometres from your pin because that is where the country's
-				centre happens to sit. Locus asks for directly-placed records only. On the current dataset
+				centre happens to sit. Locus normally asks for directly placed or curated records, except for the separately labeled People option. On the current dataset
 				build that filter turns out to change very little, which is worth saying plainly rather
 				than implying it is doing heavy lifting.
 			</p>

@@ -2,10 +2,11 @@
 
 import {
   API_BASE_URL,
-  EXCLUDED_CATEGORIES,
   SIGNIFICANCE_FLOOR,
   TARGET_RESULTS,
 } from './config'
+import { makeFilters, NOTABLE_FLOOR } from './filters'
+import type { ResultFilters } from './filters'
 
 export interface Point {
   lat: number
@@ -40,6 +41,8 @@ export interface NearbyResponse {
   coordinateMode: string
   significanceFloor: number
   totalWithinRadius: number
+  order: 'chronological'
+  offset: number
   returned: number
   entries: NearbyEntry[]
 }
@@ -64,6 +67,8 @@ export function buildNearbyRequest(
   point: Point,
   radiusKm: number,
   baseUrl: string = API_BASE_URL,
+  offset = 0,
+  filters: ResultFilters = makeFilters(),
 ): { url: string; body: string } {
   return {
     url: `${baseUrl}/v1/nearby`,
@@ -72,9 +77,11 @@ export function buildNearbyRequest(
       lng: point.lng,
       radiusKm,
       limit: TARGET_RESULTS,
-      significanceFloor: SIGNIFICANCE_FLOOR,
-      coordinateMode: 'direct',
-      excludeCategories: [...EXCLUDED_CATEGORIES],
+      offset,
+      order: 'chronological',
+      significanceFloor: filters.notableOnly ? NOTABLE_FLOOR : SIGNIFICANCE_FLOOR,
+      coordinateMode: filters.includePeople ? 'direct-with-people' : 'direct',
+      excludeCategories: [...filters.excludeCategories],
       includeUniversal: false,
     }),
   }
@@ -124,6 +131,8 @@ function isNearbyResponse(value: unknown): value is NearbyResponse {
   if (!nullableString(payload.datasetBuild)) return false
   if (typeof payload.engine !== 'string') return false
   if (typeof payload.radiusKm !== 'number') return false
+  if (payload.order !== 'chronological') return false
+  if (typeof payload.offset !== 'number' || !Number.isInteger(payload.offset) || payload.offset < 0) return false
   if (typeof payload.returned !== 'number' || !Number.isInteger(payload.returned)) return false
   if (typeof payload.totalWithinRadius !== 'number' || !Number.isInteger(payload.totalWithinRadius)) return false
   if (!Array.isArray(payload.entries) || !payload.entries.every(isEntry)) return false
@@ -153,6 +162,8 @@ export interface FetchNearbyOptions {
   signal?: AbortSignal
   fetchImpl?: typeof fetch
   baseUrl?: string
+  offset?: number
+  filters?: ResultFilters
 }
 
 export async function fetchNearby(
@@ -161,7 +172,7 @@ export async function fetchNearby(
   options: FetchNearbyOptions = {},
 ): Promise<NearbyResponse> {
   const doFetch = options.fetchImpl ?? globalThis.fetch
-  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL)
+  const { url, body } = buildNearbyRequest(point, radiusKm, options.baseUrl ?? API_BASE_URL, options.offset ?? 0, options.filters)
 
   let response: Response
   try {
@@ -199,6 +210,7 @@ export async function fetchNearby(
   } catch {
     throw new NearbyError({ kind: 'malformed' })
   }
-  if (!isNearbyResponse(payload)) throw new NearbyError({ kind: 'malformed' })
+  const expectedCoordinateMode = options.filters?.includePeople ? 'direct-with-people' : 'direct'
+  if (!isNearbyResponse(payload) || payload.coordinateMode !== expectedCoordinateMode || payload.offset !== (options.offset ?? 0) || payload.returned > TARGET_RESULTS || payload.offset + payload.returned > payload.totalWithinRadius) throw new NearbyError({ kind: 'malformed' })
   return payload
 }

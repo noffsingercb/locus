@@ -6,7 +6,7 @@ Locus is a standalone, privacy-first client of the public [GeoHistory](https://g
 
 ## How it works
 
-A click or drag settles for 400 ms, then Locus walks 5 / 15 / 50 / 150 km sequentially until 12 attributed records are available. GeoHistory selects by distance and returns that set in date order; Locus preserves the order. Births and deaths are excluded by client policy. Wide-rung results can still be founding-heavy; that is an explicit v0.1 corpus limitation, not a hidden ranking claim.
+A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 to 200 km; Locus automatically loads all matching records into the scrolling results panel in bounded batches; if loading is interrupted, retry the remaining results. GeoHistory sorts the complete matching set chronologically before selecting each group, so the entire list is in date order. Category checkboxes filter server-side; the optional Notable filter requires a significance score of at least 0.9 (an estimate, not an objective judgment). A gentle suggestion appears above 100 matches; it is not a cutoff. The list number focuses its map marker, bringing the map into view if needed. Births and deaths are excluded by default and may be enabled with the People filter. When People is enabled, birthplace and death-place fallbacks are included and marked approximate; other inferred locations remain excluded. Unknown categories remain visible. Wide-radius results can still be founding-heavy; that is a corpus limitation, not a hidden ranking claim.
 
 ## Privacy
 
@@ -15,7 +15,7 @@ A click or drag settles for 400 ms, then Locus walks 5 / 15 / 50 / 150 km sequen
 - The API call sets `referrerPolicy: no-referrer`.
 - The page uses `strict-origin-when-cross-origin`: the map provider receives only the Locus origin, never a path or coordinate.
 - Vector tiles are requested by z/x/y viewport index; no exact pin coordinate is appended.
-- `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of v0.1.
+- `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of Locus.
 
 The static privacy suite scans TypeScript plus `index.html` and `public/_headers`. It is a regression guard, not a substitute for the required browser smoke test.
 

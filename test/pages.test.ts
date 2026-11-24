@@ -134,6 +134,14 @@ describe('written pages', () => {
     }
   })
 
+  it('explains chronology and the optional people filter accurately', () => {
+    for (const route of ['/how-it-works', '/faq']) {
+      const html = readPage(route)
+      expect(html).not.toContain('full list is not globally chronological')
+      expect(html).toContain('People')
+    }
+  })
+
   it('states the coverage limits rather than promising uniform history', () => {
     // The density study's verdict was explicit that launch copy must not imply
     // global local-history coverage. These are the two pages that make claims.

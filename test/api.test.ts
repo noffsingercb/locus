@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildNearbyRequest, fetchNearby, NearbyError } from '../src/api'
 import { makeEntries, makeResponse } from './fixtures'
+import { makeFilters } from '../src/filters'
 
 const POINT = { lat: 38.5573, lng: -82.0632 }
 const BASE = 'https://api.example.org'
@@ -20,8 +21,16 @@ describe('request construction', () => {
       coordinateMode: 'direct',
       includeUniversal: false,
       significanceFloor: 0.05,
-      limit: 12,
+      limit: 500,
+      offset: 0,
+      order: 'chronological',
     })
+  })
+
+  it('combines category and notable filters without exposing coordinates in the URL', () => {
+    const { url, body } = buildNearbyRequest(POINT, 15, BASE, 25, makeFilters(['founding'], true, true))
+    expect(url).toBe(`${BASE}/v1/nearby`)
+    expect(JSON.parse(body)).toMatchObject({ order: 'chronological', offset: 25, significanceFloor: 0.9, excludeCategories: ['founding'], coordinateMode: 'direct-with-people' })
   })
 })
 
@@ -34,6 +43,12 @@ describe('response handling', () => {
     })
     expect(result.returned).toBe(3)
     expect(result.datasetBuild).toContain('prune4')
+  })
+
+  it('rejects a response without the promised global ordering', async () => {
+    const payload = { ...makeResponse(15, makeEntries(1)), order: 'nearest' }
+    const error = await fetchNearby(POINT, 15, { baseUrl: BASE, fetchImpl: async () => new Response(JSON.stringify(payload), { status: 200 }) }).catch((caught: unknown) => caught)
+    expect((error as NearbyError).failure).toEqual({ kind: 'malformed' })
   })
 
   it('rejects an unattributed entry instead of displaying it', async () => {
