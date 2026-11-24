@@ -75,7 +75,6 @@ let activeOffset = 0
 let activeTotal = 0
 let activeBuild: string | null = null
 let loadingMore = false
-let allowAutoLoad = false
 
 function clearRetryTimer(): void {
   if (retryTimer !== undefined) window.clearInterval(retryTimer)
@@ -126,7 +125,6 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
   activeTotal = 0
   activeBuild = null
   loadingMore = false
-  allowAutoLoad = false
   results.scrollTop = 0
 
   try {
@@ -139,10 +137,10 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
     activeOffset = offset + response.returned
     activeTotal = response.totalWithinRadius
     activeBuild = response.datasetBuild
-    allowAutoLoad = true
     activeResults = numberResults(response.entries, offset)
     results.innerHTML = renderResults(response)
     mapInput.showResults(activeResults)
+    if (activeOffset < activeTotal) void loadMore()
   } catch (error) {
     if (mine !== generation) return
     if (error instanceof Error && error.name === 'AbortError') return
@@ -155,8 +153,8 @@ async function search(point: Point, offset = 0, expectedBuild: string | null = n
   }
 }
 
-// Fetch only when the reader reaches the end or requests another group. Keep
-// existing cards and map state intact while the next group is in flight.
+// Fetch remaining bounded batches automatically. Keep existing cards and map
+// state intact, and offer a retry if a later batch fails.
 async function loadMore(): Promise<void> {
   if (currentPoint === null || loadingMore || activeOffset >= activeTotal) return
   const point = currentPoint
@@ -165,7 +163,6 @@ async function loadMore(): Promise<void> {
   const more = results.querySelector<HTMLElement>('.more-status')
   if (!more) return
   if (!activeBuild) {
-    allowAutoLoad = false
     more.innerHTML = '<p class="status status--error">The dataset could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
     return
   }
@@ -174,11 +171,11 @@ async function loadMore(): Promise<void> {
   more.innerHTML = '<p class="status status--busy">Loading more results…</p>'
   const controller = new AbortController()
   inFlight = controller
+  let continueLoading = false
   try {
     const response = await fetchNearby(point, Number(radius.value), { signal: controller.signal, offset, filters: currentFilters() })
     if (mine !== generation) return
     if (response.datasetBuild !== activeBuild || response.totalWithinRadius !== activeTotal) {
-      allowAutoLoad = false
       more.innerHTML = '<p class="status status--error">The dataset changed or could not be identified. Start the search again to see consistent results.</p><button type="button" class="retry" data-restart>Start again</button>'
       return
     }
@@ -192,16 +189,18 @@ async function loadMore(): Promise<void> {
     mapInput.appendResults(next)
     const count = results.querySelector<HTMLElement>('[data-count]')
     if (count) count.textContent = `Showing ${activeOffset} of ${activeTotal} matching records within ${response.radiusKm} km.`
-    more.innerHTML = activeOffset < activeTotal ? '<button type="button" class="retry" data-more>Load more results</button>' : '<p class="status-detail">All matching results loaded.</p>'
-    allowAutoLoad = true
+    continueLoading = activeOffset < activeTotal
+    more.innerHTML = continueLoading ? '<p class="status status--busy">Loading remaining results…</p>' : '<p class="status-detail">All matching results loaded.</p>'
   } catch (error) {
     if (mine !== generation || (error instanceof Error && error.name === 'AbortError')) return
     const failure: NearbyFailure = error instanceof NearbyError ? error.failure : { kind: 'malformed' }
-    allowAutoLoad = false
-    more.innerHTML = renderFailure(failure)
+    more.innerHTML = '<p class="status-detail">Some matching results have not loaded yet.</p>' + renderFailure(failure)
     wireRetry(point, failure, offset, activeBuild, true)
   } finally {
-    if (mine === generation) loadingMore = false
+    if (mine === generation) {
+      loadingMore = false
+      if (continueLoading) void loadMore()
+    }
   }
 }
 
@@ -231,13 +230,6 @@ results.addEventListener('click', (event) => {
   }
   if (currentPoint === null) return
   if (target.closest('[data-restart]')) { void search(currentPoint); return }
-  if (target.closest('[data-more]')) void loadMore()
-})
-
-// Keyboard users can focus the scroll region; the button remains available
-// without relying on scroll events or automatic loading.
-results.addEventListener('scroll', () => {
-  if (allowAutoLoad && results.scrollHeight - results.scrollTop - results.clientHeight < 80) void loadMore()
 })
 
 // Invalidate old responses immediately, not only after the debounce expires.
@@ -245,7 +237,6 @@ radius.addEventListener('input', () => {
   radiusValue.value = `${radius.value} km`
   generation += 1
   inFlight?.abort()
-  allowAutoLoad = false
   loadingMore = false
   clearRetryTimer()
   if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)
@@ -261,7 +252,6 @@ radius.addEventListener('input', () => {
 for (const control of [notable, people, ...categories]) control.addEventListener('change', () => {
   generation += 1
   inFlight?.abort()
-  allowAutoLoad = false
   loadingMore = false
   clearRetryTimer()
   if (radiusTimer !== undefined) window.clearTimeout(radiusTimer)

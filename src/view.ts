@@ -40,13 +40,13 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
 export function renderStatus(response: NearbyResponse): string {
   const { returned, totalWithinRadius, radiusKm } = response
   if (totalWithinRadius === 0) return `<p class="status status--empty">No matching records within ${radiusKm} km of this pin.</p><p class="status-detail">Coverage is uneven. Try adjusting the filters, choosing a larger radius, or moving the pin.</p>`
-  return `<p class="status" data-count role="status" aria-live="polite">Showing ${returned} of ${totalWithinRadius} matching records within ${radiusKm} km.</p><p class="status-detail">Results are ordered by date and load as you scroll.</p>${totalWithinRadius > 100 ? '<p class="status-detail">Lots to explore—try a category filter, Notable events, or a smaller radius.</p>' : ''}`
+  return `<p class="status" data-count role="status" aria-live="polite">Showing ${returned} of ${totalWithinRadius} matching records within ${radiusKm} km.</p><p class="status-detail">Results are ordered by date.</p>${totalWithinRadius > 100 ? '<p class="status-detail">Lots to explore—try a category filter, Notable events, or a smaller radius.</p>' : ''}`
 }
 
 export function renderResults(response: NearbyResponse): string {
   const entries = response.entries.map((entry, index) => renderEntry(entry, response.offset + index + 1)).join('')
   const list = entries === '' ? '' : `<ol class="entries">${entries}</ol>`
-  const more = response.returned < response.totalWithinRadius ? '<button type="button" class="retry" data-more>Load more results</button>' : ''
+  const more = response.returned < response.totalWithinRadius ? '<p class="status status--busy">Loading remaining results…</p>' : ''
   return `${renderStatus(response)}${list}<div class="more-status" aria-live="polite">${more}</div>`
 }
 
@@ -71,7 +71,7 @@ export function renderFailure(failure: NearbyFailure): string {
     case 'unreachable':
       return '<p class="status status--error">Could not reach the GeoHistory service. Your pin is still here.</p><button type="button" class="retry" data-retry>Try again</button>'
     case 'malformed':
-      return '<p class="status status--error">The service sent a response Locus could not safely render, so nothing is shown.</p><button type="button" class="retry" data-retry>Try again</button>'
+      return '<p class="status status--error">The service sent a response Locus could not safely render.</p><button type="button" class="retry" data-retry>Try again</button>'
     case 'rejected':
       if (failure.status === 422) return '<p class="status status--error">Too many potential records to search safely. Try a smaller radius or adjust the filters.</p><button type="button" class="retry" data-retry>Try again</button>'
       return `<p class="status status--error">${escapeHtml(failure.message)}</p><button type="button" class="retry" data-retry>Try again</button>`
