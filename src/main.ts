@@ -35,9 +35,9 @@ app.innerHTML = `
           <fieldset>
             <legend>Show categories</legend>
             <div class="category-grid">${EVENT_CATEGORIES.map(([id, label]) => `<label><input type="checkbox" data-category="${id}" checked /> ${label}</label>`).join('')}
-              <label><input type="checkbox" id="people" /> People (births and deaths)</label>
+              <label><input type="checkbox" id="people" /> People (births and deaths; approximate places)</label>
             </div>
-            <p class="filter-help">People are off by default. Only records with a direct or curated location are shown; some people events may be missing.</p>
+            <p class="filter-help">People are off by default. Birthplace and death-place records use an approximate place, not an exact event site.</p>
           </fieldset>
         </details>
       </div>

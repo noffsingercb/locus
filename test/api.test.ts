@@ -30,7 +30,7 @@ describe('request construction', () => {
   it('combines category and notable filters without exposing coordinates in the URL', () => {
     const { url, body } = buildNearbyRequest(POINT, 15, BASE, 25, makeFilters(['founding'], true, true))
     expect(url).toBe(`${BASE}/v1/nearby`)
-    expect(JSON.parse(body)).toMatchObject({ order: 'chronological', offset: 25, significanceFloor: 0.9, excludeCategories: ['founding'], coordinateMode: 'direct' })
+    expect(JSON.parse(body)).toMatchObject({ order: 'chronological', offset: 25, significanceFloor: 0.9, excludeCategories: ['founding'], coordinateMode: 'direct-with-people' })
   })
 })
 

@@ -42,7 +42,7 @@ try {
     const offset = body.offset
     const entries = filtered.slice(offset, offset + body.limit)
     const count = entries.length
-    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: build, engine: 'test', radiusKm: body.radiusKm, coordinateMode: 'direct', order: body.order, significanceFloor: body.significanceFloor, totalWithinRadius: total, offset, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
+    await route.fulfill({ json: { datasetVersion: 'test', datasetBuild: build, engine: 'test', radiusKm: body.radiusKm, coordinateMode: body.coordinateMode, order: body.order, significanceFloor: body.significanceFloor, totalWithinRadius: total, offset, returned: count, entries }, headers: { 'access-control-allow-origin': '*' } })
   })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto(`http://127.0.0.1:${port}/`)
@@ -114,6 +114,7 @@ try {
   await peopleResponse
   await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 25'))
   assert.ok(!requests.at(-1).body.excludeCategories.includes('birth'))
+  assert.equal(requests.at(-1).body.coordinateMode, 'direct-with-people')
   await page.locator('#notable').uncheck()
   await page.locator('[data-category="founding"]').check()
   await page.waitForFunction(() => document.querySelector('#results')?.textContent?.includes('Showing 25 of 149'))

@@ -17,6 +17,7 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
   const title = escapeHtml(entry.displayTitle ?? entry.title)
   const date = escapeHtml(formatEventDate(entry.dateStart, entry.datePrecision))
   const distance = escapeHtml(formatDistance(entry.distanceKm))
+  const approximation = entry.coordSource === 'P19' || entry.coordSource === 'P20' ? '<span class="badge">Approximate place</span>' : ''
   const scope = entry.scope ? `<span class="badge">${escapeHtml(entry.scope)}</span>` : ''
   const blurb = entry.blurb ? `<p class="blurb">${escapeHtml(entry.blurb)}</p>` : ''
   const source = `<a class="source" href="${escapeHtml(entry.sourceUrl)}" target="_blank" rel="noopener noreferrer">Source</a>`
@@ -28,7 +29,7 @@ export function renderEntry(entry: NearbyEntry, number?: number): string {
   return [
     `<li class="entry"${id}>`,
     marker,
-    `<p class="entry-meta"><time>${date}</time> &middot; <span class="distance">${distance}</span> ${scope}</p>`,
+    `<p class="entry-meta"><time>${date}</time> &middot; <span class="distance">${distance}</span> ${scope} ${approximation}</p>`,
     `<h3 class="entry-title">${title}</h3>`,
     blurb,
     source,

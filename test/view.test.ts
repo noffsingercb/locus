@@ -13,6 +13,11 @@ describe('result presentation', () => {
     expect(html.match(/class="source"/g)).toHaveLength(2)
   })
 
+  it('labels approximate birthplace or death-place coordinates', () => {
+    expect(renderEntry(makeEntry({ category: 'birth', coordSource: 'P19' }))).toContain('Approximate place')
+    expect(renderEntry(makeEntry({ category: 'event', coordSource: 'P625' }))).not.toContain('Approximate place')
+  })
+
   it('shows distance/date and escapes upstream text', () => {
     const html = renderEntry(makeEntry({
       distanceKm: 0.42,

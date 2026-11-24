@@ -80,7 +80,7 @@ export function buildNearbyRequest(
       offset,
       order: 'chronological',
       significanceFloor: filters.notableOnly ? NOTABLE_FLOOR : SIGNIFICANCE_FLOOR,
-      coordinateMode: 'direct',
+      coordinateMode: filters.includePeople ? 'direct-with-people' : 'direct',
       excludeCategories: [...filters.excludeCategories],
       includeUniversal: false,
     }),
@@ -210,6 +210,7 @@ export async function fetchNearby(
   } catch {
     throw new NearbyError({ kind: 'malformed' })
   }
-  if (!isNearbyResponse(payload) || payload.offset !== (options.offset ?? 0) || payload.returned > TARGET_RESULTS || payload.offset + payload.returned > payload.totalWithinRadius) throw new NearbyError({ kind: 'malformed' })
+  const expectedCoordinateMode = options.filters?.includePeople ? 'direct-with-people' : 'direct'
+  if (!isNearbyResponse(payload) || payload.coordinateMode !== expectedCoordinateMode || payload.offset !== (options.offset ?? 0) || payload.returned > TARGET_RESULTS || payload.offset + payload.returned > payload.totalWithinRadius) throw new NearbyError({ kind: 'malformed' })
   return payload
 }
