@@ -15,7 +15,7 @@ A click, drag, or radius adjustment settles for 400 ms. Choose a radius from 5 t
 - The API call sets `referrerPolicy: no-referrer`.
 - The page uses `strict-origin-when-cross-origin`: the map provider receives only the Locus origin, never a path or coordinate.
 - Vector tiles are requested by z/x/y viewport index; no exact pin coordinate is appended.
-- `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of v0.1.
+- `Permissions-Policy: geolocation=()` mechanically keeps location sharing out of Locus.
 
 The static privacy suite scans TypeScript plus `index.html` and `public/_headers`. It is a regression guard, not a substitute for the required browser smoke test.
 
