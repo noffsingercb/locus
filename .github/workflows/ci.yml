@@ -24,7 +24,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - name: Install
-        run: npm install
+        run: npm ci
       - name: Typecheck
         run: npm run typecheck
       - name: Test
